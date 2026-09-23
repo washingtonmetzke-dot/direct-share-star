@@ -28,7 +28,7 @@ export const garantirMaster = createServerFn({ method: "POST" }).handler(async (
     password: "zagal0077",
     email_confirm: true,
   });
-  if (error || !data.user) return { ok: false };
+  if (error || !data.user) { console.error("garantirMaster", error); return { ok: false, erro: error?.message }; }
   await supabaseAdmin.from("consultores").insert({
     id: data.user.id, nome: "Zagal", codigo: "zagal", observacao: "Usuário master do sistema.", ativo: true,
   });
