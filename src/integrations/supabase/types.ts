@@ -14,16 +14,149 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      consultores: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          criado_em: string
+          id: string
+          nome: string
+          observacao: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          criado_em?: string
+          id: string
+          nome: string
+          observacao?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          criado_em?: string
+          id?: string
+          nome?: string
+          observacao?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendas: {
+        Row: {
+          administradora: string | null
+          cidade: string | null
+          consultor_id: string
+          data_cadastro: string
+          email: string | null
+          forma_pagamento: string | null
+          id: string
+          nome: string
+          nome_produtor: string | null
+          numero_parcelas: number | null
+          numero_vidas: number | null
+          operadora: string | null
+          plano: string | null
+          produto_auto: string | null
+          seguradora: string | null
+          telefone: string | null
+          tipo_produto: string
+          valor: number | null
+          valor_apolice: number | null
+          valor_total_fatura: number | null
+          vencimento: string | null
+          vigencia: string | null
+        }
+        Insert: {
+          administradora?: string | null
+          cidade?: string | null
+          consultor_id?: string
+          data_cadastro?: string
+          email?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          nome: string
+          nome_produtor?: string | null
+          numero_parcelas?: number | null
+          numero_vidas?: number | null
+          operadora?: string | null
+          plano?: string | null
+          produto_auto?: string | null
+          seguradora?: string | null
+          telefone?: string | null
+          tipo_produto: string
+          valor?: number | null
+          valor_apolice?: number | null
+          valor_total_fatura?: number | null
+          vencimento?: string | null
+          vigencia?: string | null
+        }
+        Update: {
+          administradora?: string | null
+          cidade?: string | null
+          consultor_id?: string
+          data_cadastro?: string
+          email?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          nome?: string
+          nome_produtor?: string | null
+          numero_parcelas?: number | null
+          numero_vidas?: number | null
+          operadora?: string | null
+          plano?: string | null
+          produto_auto?: string | null
+          seguradora?: string | null
+          telefone?: string | null
+          tipo_produto?: string
+          valor?: number | null
+          valor_apolice?: number | null
+          valor_total_fatura?: number | null
+          vencimento?: string | null
+          vigencia?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_consultor_id_fkey"
+            columns: ["consultor_id"]
+            isOneToOne: false
+            referencedRelation: "consultores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +283,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
