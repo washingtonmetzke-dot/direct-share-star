@@ -45,7 +45,7 @@ const base = z.object({
 
 export const criarConsultor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => base.extend({ senha: z.string().min(6, "Senha deve ter ao menos 6 caracteres.") }).parse(d))
+  .validator((d) => base.extend({ senha: z.string().min(6, "Senha deve ter ao menos 6 caracteres.") }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -63,7 +63,7 @@ export const criarConsultor = createServerFn({ method: "POST" })
 
 export const editarConsultor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     base.extend({ id: z.string().uuid(), ativo: z.boolean(), senha: z.string().optional().default("") }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -92,7 +92,7 @@ export const editarConsultor = createServerFn({ method: "POST" })
 
 export const excluirConsultor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

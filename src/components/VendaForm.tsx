@@ -9,29 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Tipo = "auto" | "saude" | "odonto";
+const CAMPOS = ["nome","email","telefone","cidade","produto_auto","valor_apolice","forma_pagamento","numero_parcelas","seguradora","plano","operadora","administradora","nome_produtor","valor","numero_vidas","valor_total_fatura","vigencia","vencimento"] as const;
+type Campo = (typeof CAMPOS)[number];
 const str = (v: unknown) => (v === null || v === undefined ? "" : String(v));
 
 export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, any> }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [v, setV] = useState<Record<string, string>>(() => {
-    const campos = ["nome","email","telefone","cidade","produto_auto","valor_apolice","forma_pagamento","numero_parcelas","seguradora","plano","operadora","administradora","nome_produtor","valor","numero_vidas","valor_total_fatura","vigencia","vencimento"];
-    const o: Record<string, string> = {};
-    campos.forEach((c) => (o[c] = str(venda?.[c])));
+  const [v, setV] = useState<Record<Campo, string>>(() => {
+    const o = {} as Record<Campo, string>;
+    CAMPOS.forEach((c) => (o[c] = str(venda?.[c])));
     if (!o.numero_parcelas) o.numero_parcelas = "1";
     return o;
   });
   const [salvando, setSalvando] = useState(false);
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV((p) => ({ ...p, [k]: e.target.value }));
+  const set = (k: Campo) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV((p) => ({ ...p, [k]: e.target.value }));
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
-    if (!v.nome.trim()) return toast.error("O campo Nome é obrigatório.");
+    if (!v.nome.trim()) { toast.error("O campo Nome é obrigatório."); return; }
     const comum = { nome: v.nome.trim(), email: v.email.trim(), telefone: v.telefone.trim(), cidade: v.cidade.trim() };
     let payload: Record<string, any>;
     if (tipo === "auto") {
-      if (!v.produto_auto) return toast.error("Selecione um produto Auto válido.");
-      if (!v.forma_pagamento) return toast.error("Selecione uma forma de pagamento válida.");
+      if (!v.produto_auto) { toast.error("Selecione um produto Auto válido."); return; }
+      if (!v.forma_pagamento) { toast.error("Selecione uma forma de pagamento válida."); return; }
       payload = { ...comum, produto_auto: v.produto_auto, valor_apolice: parseDecimal(v.valor_apolice), forma_pagamento: v.forma_pagamento, numero_parcelas: parseIntOrNull(v.numero_parcelas) ?? 1, seguradora: v.seguradora.trim() };
     } else {
       payload = { ...comum, plano: v.plano.trim(), operadora: v.operadora.trim(), administradora: v.administradora.trim(), nome_produtor: v.nome_produtor.trim(), valor: parseDecimal(v.valor), numero_vidas: parseIntOrNull(v.numero_vidas), valor_total_fatura: parseDecimal(v.valor_total_fatura), vigencia: v.vigencia || null, vencimento: v.vencimento || null };
@@ -39,16 +40,16 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     setSalvando(true);
     const { data: u } = await supabase.auth.getUser();
     const { error } = venda
-      ? await supabase.from("vendas").update(payload).eq("id", venda.id)
+      ? await supabase.from("vendas").update(payload).eq("id", venda["id"])
       : await supabase.from("vendas").insert({ ...payload, tipo_produto: tipo, consultor_id: u.user!.id } as any);
     setSalvando(false);
-    if (error) return toast.error("Erro ao salvar: " + error.message);
+    if (error) { toast.error("Erro ao salvar: " + error.message); return; }
     toast.success(venda ? "Venda atualizada com sucesso." : "Venda cadastrada com sucesso.");
     qc.invalidateQueries({ queryKey: ["vendas"] });
     navigate({ to: "/vendas" });
   }
 
-  const F = ({ id, label, type = "text", ...rest }: { id: string; label: string; type?: string; [k: string]: any }) => (
+  const F = ({ id, label, type = "text", ...rest }: { id: Campo; label: string; type?: string; [k: string]: any }) => (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} type={type} value={v[id]} onChange={set(id)} {...rest} />

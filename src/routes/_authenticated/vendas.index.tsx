@@ -55,7 +55,7 @@ function Vendas() {
   async function excluir(id: string, nome: string) {
     if (!confirm(`Excluir a venda de ${nome}?`)) return;
     const { error } = await supabase.from("vendas").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Venda excluída com sucesso.");
     qc.invalidateQueries({ queryKey: ["vendas"] });
   }
