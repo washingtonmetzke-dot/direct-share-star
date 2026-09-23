@@ -10,10 +10,10 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar · Zagal Corretora" },
-      { name: "description", content: "Acesso ao sistema de cadastro de vendas da Zagal Corretora." },
-      { property: "og:title", content: "Entrar · Zagal Corretora" },
-      { property: "og:description", content: "Acesso ao sistema de cadastro de vendas da Zagal Corretora." },
+      { title: "Entrar · Lord Corretora" },
+      { name: "description", content: "Acesso ao sistema de cadastro de vendas da Lord Corretora." },
+      { property: "og:title", content: "Entrar · Lord Corretora" },
+      { property: "og:description", content: "Acesso ao sistema de cadastro de vendas da Lord Corretora." },
     ],
   }),
   component: Login,
@@ -58,7 +58,7 @@ function Login() {
     <div className="flex min-h-screen items-center justify-center bg-muted px-4">
       <form onSubmit={entrar} className="w-full max-w-sm space-y-5 rounded-xl border bg-card p-8 shadow-sm">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-primary">Zagal Corretora</h1>
+          <h1 className="text-2xl font-bold text-primary">Lord Corretora</h1>
           <p className="text-sm text-muted-foreground">Cadastro de vendas</p>
         </div>
         {erro && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{erro}</div>}

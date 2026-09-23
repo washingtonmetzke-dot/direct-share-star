@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/vendas/")({
-  head: () => ({ meta: [{ title: "Vendas · Zagal Corretora" }, { name: "description", content: "Vendas cadastradas" }] }),
+  head: () => ({ meta: [{ title: "Vendas · Lord Corretora" }, { name: "description", content: "Vendas cadastradas" }] }),
   component: Vendas,
 });
 

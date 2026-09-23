@@ -5,7 +5,7 @@ import { useSessao } from "@/lib/sessao";
 import { VendaForm } from "@/components/VendaForm";
 
 export const Route = createFileRoute("/_authenticated/vendas/$id")({
-  head: () => ({ meta: [{ title: "Editar Venda · Zagal Corretora" }, { name: "description", content: "Editar venda" }] }),
+  head: () => ({ meta: [{ title: "Editar Venda · Lord Corretora" }, { name: "description", content: "Editar venda" }] }),
   component: Editar,
 });
 

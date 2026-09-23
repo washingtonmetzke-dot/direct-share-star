@@ -33,7 +33,7 @@ function Layout() {
     <div className="min-h-screen bg-muted">
       <header className="bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-3">
-          <Link to="/vendas" className="mr-4 font-bold">Zagal Corretora</Link>
+          <Link to="/vendas" className="mr-4 font-bold">Lord Corretora</Link>
           <Link to="/vendas" className={link} activeProps={ativo} activeOptions={{ exact: true }}>Vendas</Link>
           <Link to="/vendas/novo" className={link} activeProps={ativo}>Nova Venda</Link>
           {sessao?.isAdmin && <Link to="/consultores" className={link} activeProps={ativo}>Consultores</Link>}

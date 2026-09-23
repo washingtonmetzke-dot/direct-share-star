@@ -3,7 +3,7 @@ import { useState } from "react";
 import { VendaForm } from "@/components/VendaForm";
 
 export const Route = createFileRoute("/_authenticated/vendas/novo")({
-  head: () => ({ meta: [{ title: "Nova Venda · Zagal Corretora" }, { name: "description", content: "Cadastrar nova venda" }] }),
+  head: () => ({ meta: [{ title: "Nova Venda · Lord Corretora" }, { name: "description", content: "Cadastrar nova venda" }] }),
   component: Novo,
 });
 
