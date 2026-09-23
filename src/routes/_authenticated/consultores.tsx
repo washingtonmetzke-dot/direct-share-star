@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/consultores")({
-  head: () => ({ meta: [{ title: "Consultores · Zagal Corretora" }, { name: "description", content: "Gestão de consultores" }] }),
+  head: () => ({ meta: [{ title: "Consultores · Lord Corretora" }, { name: "description", content: "Gestão de consultores" }] }),
   component: Consultores,
 });
 
