@@ -29,7 +29,7 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     e.preventDefault();
     if (!v.nome.trim()) { toast.error("O campo Nome é obrigatório."); return; }
     const comum = { nome: v.nome.trim(), email: v.email.trim(), telefone: v.telefone.trim(), cidade: v.cidade.trim() };
-    let payload: Record<string, any>;
+    let payload: any;
     if (tipo === "auto") {
       if (!v.produto_auto) { toast.error("Selecione um produto Auto válido."); return; }
       if (!v.forma_pagamento) { toast.error("Selecione uma forma de pagamento válida."); return; }
