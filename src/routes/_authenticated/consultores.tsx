@@ -18,8 +18,8 @@ export const Route = createFileRoute("/_authenticated/consultores")({
   component: Consultores,
 });
 
-type Linha = { id: string; nome: string; codigo: string; observacao: string | null; ativo: boolean; is_admin: boolean };
-type Form = { id?: string; nome: string; codigo: string; senha: string; is_admin: boolean; ativo: boolean; observacao: string };
+type Linha = { id: string; nome: string; observacao: string | null; ativo: boolean; is_admin: boolean };
+type Form = { id?: string; nome: string; senha: string; is_admin: boolean; ativo: boolean; observacao: string };
 
 function Consultores() {
   const { data: sessao } = useSessao();
@@ -59,10 +59,10 @@ function Consultores() {
     setSalvando(true);
     try {
       if (form.id) {
-        await editar({ data: { id: form.id, nome: form.nome, codigo: form.codigo, senha: form.senha, is_admin: form.is_admin, ativo: form.ativo, observacao: form.observacao } });
+        await editar({ data: { id: form.id, nome: form.nome, senha: form.senha, is_admin: form.is_admin, ativo: form.ativo, observacao: form.observacao } });
         toast.success("Consultor atualizado com sucesso.");
       } else {
-        await criar({ data: { nome: form.nome, codigo: form.codigo, senha: form.senha, is_admin: form.is_admin, observacao: form.observacao } });
+        await criar({ data: { nome: form.nome, senha: form.senha, is_admin: form.is_admin, observacao: form.observacao } });
         toast.success("Consultor cadastrado com sucesso.");
       }
       setForm(null);
@@ -89,12 +89,12 @@ function Consultores() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Consultores</h1>
-        <Button size="sm" onClick={() => setForm({ nome: "", codigo: "", senha: "", is_admin: false, ativo: true, observacao: "" })}>+ Novo Consultor</Button>
+        <Button size="sm" onClick={() => setForm({ nome: "", senha: "", is_admin: false, ativo: true, observacao: "" })}>+ Novo Consultor</Button>
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-muted/60 text-left">
-            <tr><th className="p-3">Nome</th><th className="p-3">Código</th><th className="p-3">Perfil</th><th className="p-3">Status</th><th className="p-3">Observação</th><th className="p-3 text-right">Ações</th></tr>
+            <tr><th className="p-3">Nome</th><th className="p-3">Perfil</th><th className="p-3">Status</th><th className="p-3">Observação</th><th className="p-3 text-right">Ações</th></tr>
           </thead>
           <tbody>
             {lista.map((c) => {
@@ -102,12 +102,11 @@ function Consultores() {
               return (
                 <tr key={c.id} className="border-t">
                   <td className="p-3">{c.nome}</td>
-                  <td className="p-3 font-mono">{c.codigo}</td>
                   <td className="p-3">{c.is_admin ? "ADM" : "Consultor"}</td>
                   <td className="p-3">{c.ativo ? <span className="text-primary">Ativo</span> : <span className="text-muted-foreground">Inativo</span>}</td>
                   <td className="max-w-xs truncate p-3 text-muted-foreground">{c.observacao || "—"}</td>
                   <td className="space-x-2 whitespace-nowrap p-3 text-right">
-                    <Button size="sm" variant="outline" onClick={() => setForm({ id: c.id, nome: c.nome, codigo: c.codigo, senha: "", is_admin: c.is_admin, ativo: c.ativo, observacao: c.observacao ?? "" })}>Editar</Button>
+                    <Button size="sm" variant="outline" onClick={() => setForm({ id: c.id, nome: c.nome, senha: "", is_admin: c.is_admin, ativo: c.ativo, observacao: c.observacao ?? "" })}>Editar</Button>
                     <Button
                       size="sm"
                       variant="destructive"
@@ -130,8 +129,11 @@ function Consultores() {
           <DialogHeader><DialogTitle>{form?.id ? "Editar consultor" : "Novo consultor"}</DialogTitle></DialogHeader>
           {form && (
             <form onSubmit={salvar} className="space-y-4">
-              <div className="space-y-1.5"><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required /></div>
-              <div className="space-y-1.5"><Label>Código de acesso *</Label><Input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} required /></div>
+              <div className="space-y-1.5">
+                <Label>Nome *</Label>
+                <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
+                <p className="text-xs text-muted-foreground">O consultor faz login com este nome.</p>
+              </div>
               <div className="space-y-1.5">
                 <Label>{form.id ? "Nova senha (deixe em branco para manter)" : "Senha *"}</Label>
                 <Input type="password" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} required={!form.id} />

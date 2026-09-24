@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { garantirMaster, EMAIL_DOMAIN } from "@/lib/consultores.functions";
+import { garantirMaster, slugify, toEmail } from "@/lib/consultores.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,17 +39,17 @@ function Login() {
     e.preventDefault();
     setErro("");
     setCarregando(true);
-    const email = `${codigo.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
+    const email = toEmail(slugify(codigo));
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
     if (error || !data.user) {
       setCarregando(false);
-      return setErro("Código ou senha inválidos.");
+      return setErro("Usuário ou senha inválidos.");
     }
     const { data: c } = await supabase.from("consultores").select("ativo").eq("id", data.user.id).maybeSingle();
     if (!c?.ativo) {
       await supabase.auth.signOut();
       setCarregando(false);
-      return setErro("Código ou senha inválidos.");
+      return setErro("Usuário ou senha inválidos.");
     }
     qc.clear();
     navigate({ to: "/vendas", replace: true });
@@ -65,7 +65,7 @@ function Login() {
         {erro && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{erro}</div>}
         <div className="space-y-2">
           <Label htmlFor="codigo">Usuário</Label>
-          <Input id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value)} required autoFocus />
+          <Input id="codigo" placeholder="Nome do consultor" value={codigo} onChange={(e) => setCodigo(e.target.value)} required autoFocus />
         </div>
         <div className="space-y-2">
           <Label htmlFor="senha">Senha</Label>

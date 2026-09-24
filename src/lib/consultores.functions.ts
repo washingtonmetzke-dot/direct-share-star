@@ -3,7 +3,31 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const EMAIL_DOMAIN = "zagal.app";
-const toEmail = (codigo: string) => `${codigo.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
+
+// Deriva um identificador de login estável a partir do nome (sem acentos,
+// espaços ou símbolos), usado como "codigo" interno e para montar o e-mail
+// técnico do Supabase Auth. O campo de código não é mais exposto na tela.
+export function slugify(nome: string): string {
+  return nome
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+export const toEmail = (codigo: string) => `${codigo}@${EMAIL_DOMAIN}`;
+
+async function proximoCodigoDisponivel(admin: any, nome: string, ignorarId?: string) {
+  const base = slugify(nome) || "consultor";
+  let codigo = base;
+  let sufixo = 2;
+  for (;;) {
+    const { data } = await admin.from("consultores").select("id").eq("codigo", codigo).maybeSingle();
+    if (!data || data.id === ignorarId) return codigo;
+    codigo = `${base}${sufixo}`;
+    sufixo += 1;
+  }
+}
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
@@ -38,7 +62,6 @@ export const garantirMaster = createServerFn({ method: "POST" }).handler(async (
 
 const base = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório.").max(120),
-  codigo: z.string().trim().min(1, "Código é obrigatório.").max(30).regex(/^[a-zA-Z0-9._-]+$/, "Código deve conter apenas letras, números, ponto, hífen ou sublinhado."),
   is_admin: z.boolean(),
   observacao: z.string().max(2000).optional().default(""),
 });
@@ -49,9 +72,7 @@ export const criarConsultor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const codigo = data.codigo.toLowerCase();
-    const { data: dup } = await supabaseAdmin.from("consultores").select("id").eq("codigo", codigo).maybeSingle();
-    if (dup) throw new Error("Já existe um consultor com esse código.");
+    const codigo = await proximoCodigoDisponivel(supabaseAdmin, data.nome);
     const { data: u, error } = await supabaseAdmin.auth.admin.createUser({
       email: toEmail(codigo), password: data.senha, email_confirm: true,
     });
@@ -69,9 +90,7 @@ export const editarConsultor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const codigo = data.codigo.toLowerCase();
-    const { data: dup } = await supabaseAdmin.from("consultores").select("id").eq("codigo", codigo).maybeSingle();
-    if (dup && dup.id !== data.id) throw new Error("Já existe um consultor com esse código.");
+    const codigo = await proximoCodigoDisponivel(supabaseAdmin, data.nome, data.id);
     if (data.senha && data.senha.length < 6) throw new Error("Senha deve ter ao menos 6 caracteres.");
 
     const ativos = await adminsAtivos(supabaseAdmin);

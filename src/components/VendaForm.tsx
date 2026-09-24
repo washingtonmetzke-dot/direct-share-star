@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDecimal, parseIntOrNull, TIPO_LABEL } from "@/lib/sessao";
+import { formatTelefone } from "@/lib/mask";
+import { CIDADES_ES } from "@/lib/cidades-es";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +22,7 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     const o = {} as Record<Campo, string>;
     CAMPOS.forEach((c) => (o[c] = str(venda?.[c])));
     if (!o.numero_parcelas) o.numero_parcelas = "1";
+    if (o.telefone) o.telefone = formatTelefone(o.telefone);
     return o;
   });
   const [salvando, setSalvando] = useState(false);
@@ -63,8 +66,26 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
       <div className="grid gap-4 md:grid-cols-2">
         {F({ id: "nome", label: "Nome *", required: true })}
         {F({ id: "email", label: "E-mail", type: "email" })}
-        {F({ id: "telefone", label: "Telefone" })}
-        {F({ id: "cidade", label: "Cidade" })}
+        <div className="space-y-1.5">
+          <Label htmlFor="telefone">Telefone</Label>
+          <Input
+            id="telefone"
+            inputMode="tel"
+            placeholder="(27) 99999-9999"
+            maxLength={15}
+            value={v.telefone}
+            onChange={(e) => setV((p) => ({ ...p, telefone: formatTelefone(e.target.value) }))}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cidade">Cidade</Label>
+          <select id="cidade" className={sel} value={v.cidade} onChange={set("cidade")}>
+            <option value="">Selecione...</option>
+            {CIDADES_ES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <hr />
       {tipo === "auto" ? (
