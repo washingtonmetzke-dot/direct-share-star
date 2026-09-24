@@ -1,15 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { parseDecimal, parseIntOrNull, TIPO_LABEL } from "@/lib/sessao";
 import { formatTelefone } from "@/lib/mask";
 import { CIDADES_ES } from "@/lib/cidades-es";
 import { SEGURADORAS } from "@/lib/seguradoras";
+import { criarVenda, editarVenda } from "@/lib/vendas.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+function mensagem(err: any) {
+  const m = err?.message ?? String(err);
+  try {
+    const p = JSON.parse(m);
+    if (Array.isArray(p)) return p[0]?.message ?? m;
+  } catch {}
+  return m;
+}
 
 type Tipo = "auto" | "saude" | "odonto";
 const CAMPOS = ["nome","email","telefone","cidade","produto_auto","valor_apolice","forma_pagamento","numero_parcelas","seguradora","plano","operadora","administradora","valor","numero_vidas","valor_total_fatura","vigencia","vencimento"] as const;
@@ -19,6 +29,8 @@ const str = (v: unknown) => (v === null || v === undefined ? "" : String(v));
 export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, any> }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const criar = useServerFn(criarVenda);
+  const editar = useServerFn(editarVenda);
   const [v, setV] = useState<Record<Campo, string>>(() => {
     const o = {} as Record<Campo, string>;
     CAMPOS.forEach((c) => (o[c] = str(venda?.[c])));
@@ -42,15 +54,21 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
       payload = { ...comum, plano: v.plano.trim(), operadora: v.operadora.trim(), administradora: v.administradora.trim(), valor: parseDecimal(v.valor), numero_vidas: parseIntOrNull(v.numero_vidas), valor_total_fatura: parseDecimal(v.valor_total_fatura), vigencia: v.vigencia || null, vencimento: v.vencimento || null };
     }
     setSalvando(true);
-    const { data: u } = await supabase.auth.getUser();
-    const { error } = venda
-      ? await supabase.from("vendas").update(payload).eq("id", venda["id"])
-      : await supabase.from("vendas").insert({ ...payload, tipo_produto: tipo, consultor_id: u.user!.id } as any);
-    setSalvando(false);
-    if (error) { toast.error("Erro ao salvar: " + error.message); return; }
-    toast.success(venda ? "Venda atualizada com sucesso." : "Venda cadastrada com sucesso.");
-    qc.invalidateQueries({ queryKey: ["vendas"] });
-    navigate({ to: "/vendas" });
+    try {
+      if (venda) {
+        await editar({ data: { id: venda["id"], tipo_produto: tipo, ...payload } });
+        toast.success("Venda atualizada com sucesso.");
+      } else {
+        await criar({ data: { tipo_produto: tipo, ...payload } });
+        toast.success("Venda cadastrada com sucesso.");
+      }
+      qc.invalidateQueries({ queryKey: ["vendas"] });
+      navigate({ to: "/vendas" });
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + mensagem(err));
+    } finally {
+      setSalvando(false);
+    }
   }
 
   const F = ({ id, label, type = "text", ...rest }: { id: Campo; label: string; type?: string; [k: string]: any }) => (

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { garantirMaster, slugify, toEmail } from "@/lib/consultores.functions";
+import { slugify, toEmail } from "@/lib/consultores.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,6 @@ function Login() {
   const [carregando, setCarregando] = useState(false);
 
   useEffect(() => {
-    garantirMaster().catch(() => {});
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/vendas", replace: true });
     });

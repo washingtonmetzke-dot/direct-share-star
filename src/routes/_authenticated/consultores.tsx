@@ -226,7 +226,7 @@ function Consultores() {
               )}
               <label className="flex items-center gap-2 text-sm"><Checkbox checked={form.is_admin} onCheckedChange={(v) => setForm({ ...form, is_admin: !!v })} /> Administrador (ADM)</label>
               {form.id && <label className="flex items-center gap-2 text-sm"><Checkbox checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: !!v })} /> Ativo</label>}
-              {form.id && (
+              {form.id && !lista.some((x) => x.is_master && x.id !== form.id) && (
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={form.is_master}

@@ -67,24 +67,6 @@ async function adminsAtivos(admin: any) {
   return (data ?? []).map((c: any) => c.id as string);
 }
 
-// Cria o usuário master (zagal / zagal0077) caso ainda não exista. Idempotente.
-export const garantirMaster = createServerFn({ method: "POST" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: existe } = await supabaseAdmin.from("consultores").select("id").eq("codigo", "zagal").maybeSingle();
-  if (existe) return { ok: true };
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email: toEmail("zagal"),
-    password: "zagal0077",
-    email_confirm: true,
-  });
-  if (error || !data.user) { console.error("garantirMaster", error); return { ok: false, erro: error?.message }; }
-  await supabaseAdmin.from("consultores").insert({
-    id: data.user.id, nome: "Zagal", codigo: "zagal", observacao: "Usuário master do sistema.", ativo: true, is_master: true,
-  });
-  await supabaseAdmin.from("user_roles").insert({ user_id: data.user.id, role: "admin" });
-  return { ok: true };
-});
-
 const base = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório.").max(120),
   is_admin: z.boolean(),
@@ -135,9 +117,10 @@ export const editarConsultor = createServerFn({ method: "POST" })
     const eraMaster = !!atual?.is_master;
     const loginMudou = atual?.codigo !== codigo;
 
-    // Desmarcar o master, trocar a senha dele, ou renomear (o que muda o login
-    // dele, já que o login é derivado do nome) exige confirmar a senha atual dele.
-    const precisaConfirmarSenha = eraMaster && (!data.is_master || data.senha || loginMudou);
+    // Desmarcar o master, desativá-lo, trocar a senha dele, ou renomeá-lo (o
+    // que muda o login dele, já que o login é derivado do nome) exige
+    // confirmar a senha atual dele.
+    const precisaConfirmarSenha = eraMaster && (!data.is_master || !data.ativo || data.senha || loginMudou);
     if (precisaConfirmarSenha) {
       const ok = data.senha_master_atual && (await verificarSenhaDoMaster(supabaseAdmin, data.senha_master_atual));
       if (!ok) throw new Error("Senha atual do usuário master incorreta.");
