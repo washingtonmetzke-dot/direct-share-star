@@ -34,6 +34,31 @@ async function assertAdmin(supabase: any, userId: string) {
   if (error || !data) throw new Error("Acesso não autorizado.");
 }
 
+// Confere a senha do consultor marcado como "Usuário master", sem afetar a
+// sessão de quem está pedindo a confirmação (login de teste descartável,
+// isolado, usando só a chave publica — não precisa da service role, nem
+// para achar o master nem para conferir a senha).
+async function verificarSenhaDoMaster(leitura: any, senha: string): Promise<boolean> {
+  const { data: master } = await leitura.from("consultores").select("codigo").eq("is_master", true).maybeSingle();
+  if (!master) return false;
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) return false;
+  const temp = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { error } = await temp.auth.signInWithPassword({ email: toEmail(master.codigo), password: senha });
+  return !error;
+}
+
+export const verificarSenhaMaster = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d) => z.object({ senha: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const ok = await verificarSenhaDoMaster(context.supabase, data.senha);
+    return { ok };
+  });
+
 async function adminsAtivos(admin: any) {
   const { data: roles } = await admin.from("user_roles").select("user_id").eq("role", "admin");
   const ids = (roles ?? []).map((r: any) => r.user_id);
@@ -54,7 +79,7 @@ export const garantirMaster = createServerFn({ method: "POST" }).handler(async (
   });
   if (error || !data.user) { console.error("garantirMaster", error); return { ok: false, erro: error?.message }; }
   await supabaseAdmin.from("consultores").insert({
-    id: data.user.id, nome: "Zagal", codigo: "zagal", observacao: "Usuário master do sistema.", ativo: true,
+    id: data.user.id, nome: "Zagal", codigo: "zagal", observacao: "Usuário master do sistema.", ativo: true, is_master: true,
   });
   await supabaseAdmin.from("user_roles").insert({ user_id: data.user.id, role: "admin" });
   return { ok: true };
@@ -85,7 +110,15 @@ export const criarConsultor = createServerFn({ method: "POST" })
 export const editarConsultor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d) =>
-    base.extend({ id: z.string().uuid(), ativo: z.boolean(), senha: z.string().optional().default("") }).parse(d),
+    base
+      .extend({
+        id: z.string().uuid(),
+        ativo: z.boolean(),
+        senha: z.string().optional().default(""),
+        is_master: z.boolean().optional().default(false),
+        senha_master_atual: z.string().optional().default(""),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
@@ -98,12 +131,27 @@ export const editarConsultor = createServerFn({ method: "POST" })
       throw new Error("Não é possível remover o ADM ou desativar o único ADM ativo do sistema.");
     }
 
+    const { data: atual } = await supabaseAdmin.from("consultores").select("is_master").eq("id", data.id).single();
+    const eraMaster = !!atual?.is_master;
+
+    // Desmarcar o master, ou trocar a senha dele, exige confirmar a senha atual dele.
+    const precisaConfirmarSenha = (eraMaster && !data.is_master) || (eraMaster && data.is_master && data.senha);
+    if (precisaConfirmarSenha) {
+      const ok = data.senha_master_atual && (await verificarSenhaDoMaster(supabaseAdmin, data.senha_master_atual));
+      if (!ok) throw new Error("Senha atual do usuário master incorreta.");
+    }
+    // Marcar um novo master: só pode haver um no sistema.
+    if (!eraMaster && data.is_master) {
+      const { data: outro } = await supabaseAdmin.from("consultores").select("id").eq("is_master", true).maybeSingle();
+      if (outro) throw new Error("Já existe um usuário master no sistema. Desmarque o atual antes de definir outro.");
+    }
+
     const upd: any = { email: toEmail(codigo), ban_duration: data.ativo ? "none" : "876000h" };
     if (data.senha) upd.password = data.senha;
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, upd);
     if (error) throw new Error(error.message);
 
-    await supabaseAdmin.from("consultores").update({ nome: data.nome, codigo, observacao: data.observacao, ativo: data.ativo }).eq("id", data.id);
+    await supabaseAdmin.from("consultores").update({ nome: data.nome, codigo, observacao: data.observacao, ativo: data.ativo, is_master: data.is_master }).eq("id", data.id);
     if (data.is_admin) await supabaseAdmin.from("user_roles").upsert({ user_id: data.id, role: "admin" }, { onConflict: "user_id,role" });
     else await supabaseAdmin.from("user_roles").delete().eq("user_id", data.id).eq("role", "admin");
     return { ok: true };
@@ -115,6 +163,8 @@ export const excluirConsultor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: alvo } = await supabaseAdmin.from("consultores").select("is_master").eq("id", data.id).single();
+    if (alvo?.is_master) throw new Error("Não é possível excluir: este é o usuário master do sistema.");
     const ativos = await adminsAtivos(supabaseAdmin);
     if (ativos.length <= 1 && ativos.includes(data.id)) throw new Error("Não é possível excluir: este é o único ADM ativo do sistema.");
     const { count } = await supabaseAdmin.from("vendas").select("id", { count: "exact", head: true }).eq("consultor_id", data.id);

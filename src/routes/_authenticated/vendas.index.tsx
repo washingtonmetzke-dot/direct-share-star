@@ -36,7 +36,7 @@ function Vendas() {
   const { data: consultores = [] } = useQuery({
     queryKey: ["consultores"],
     enabled: isAdmin,
-    queryFn: async () => (await supabase.from("consultores").select("id,nome").order("nome")).data ?? [],
+    queryFn: async () => (await supabase.from("consultores").select("id,nome").eq("is_master", false).order("nome")).data ?? [],
   });
   const nomeDe = useMemo(() => Object.fromEntries(consultores.map((c) => [c.id, c.nome])), [consultores]);
 
