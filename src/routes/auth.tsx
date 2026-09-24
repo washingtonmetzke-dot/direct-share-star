@@ -55,7 +55,7 @@ function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#E2E9F0] px-4">
       <form onSubmit={entrar} className="w-full max-w-sm space-y-5 rounded-xl border bg-card p-8 shadow-sm">
         <div className="text-center">
           <img src={lordLogo} alt="Lord Corretora de Seguros e Saúde" className="mx-auto w-56 rounded-lg shadow-sm" />
