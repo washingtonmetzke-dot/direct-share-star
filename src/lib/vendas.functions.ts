@@ -101,7 +101,7 @@ export const editarVenda = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { id, ...payload } = data;
-    const { error } = await context.supabase.from("vendas").update(payload).eq("id", id);
+    const { error } = await context.supabase.from("vendas").update(payload as any).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

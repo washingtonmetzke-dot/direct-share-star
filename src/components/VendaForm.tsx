@@ -36,9 +36,9 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     CAMPOS.forEach((c) => (o[c] = str(venda?.[c])));
     if (!o.numero_parcelas) o.numero_parcelas = "1";
     if (o.telefone) o.telefone = formatTelefone(o.telefone);
-    o.valor_apolice = numeroParaMoeda(venda?.valor_apolice);
-    o.valor = numeroParaMoeda(venda?.valor);
-    o.valor_total_fatura = numeroParaMoeda(venda?.valor_total_fatura);
+    o.valor_apolice = numeroParaMoeda(venda?.["valor_apolice"]);
+    o.valor = numeroParaMoeda(venda?.["valor"]);
+    o.valor_total_fatura = numeroParaMoeda(venda?.["valor_total_fatura"]);
     return o;
   });
   const [salvando, setSalvando] = useState(false);
