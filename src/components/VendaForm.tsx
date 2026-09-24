@@ -6,12 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseDecimal, parseIntOrNull, TIPO_LABEL } from "@/lib/sessao";
 import { formatTelefone } from "@/lib/mask";
 import { CIDADES_ES } from "@/lib/cidades-es";
+import { SEGURADORAS } from "@/lib/seguradoras";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Tipo = "auto" | "saude" | "odonto";
-const CAMPOS = ["nome","email","telefone","cidade","produto_auto","valor_apolice","forma_pagamento","numero_parcelas","seguradora","plano","operadora","administradora","nome_produtor","valor","numero_vidas","valor_total_fatura","vigencia","vencimento"] as const;
+const CAMPOS = ["nome","email","telefone","cidade","produto_auto","valor_apolice","forma_pagamento","numero_parcelas","seguradora","plano","operadora","administradora","valor","numero_vidas","valor_total_fatura","vigencia","vencimento"] as const;
 type Campo = (typeof CAMPOS)[number];
 const str = (v: unknown) => (v === null || v === undefined ? "" : String(v));
 
@@ -38,7 +39,7 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
       if (!v.forma_pagamento) { toast.error("Selecione uma forma de pagamento válida."); return; }
       payload = { ...comum, produto_auto: v.produto_auto, valor_apolice: parseDecimal(v.valor_apolice), forma_pagamento: v.forma_pagamento, numero_parcelas: parseIntOrNull(v.numero_parcelas) ?? 1, seguradora: v.seguradora.trim() };
     } else {
-      payload = { ...comum, plano: v.plano.trim(), operadora: v.operadora.trim(), administradora: v.administradora.trim(), nome_produtor: v.nome_produtor.trim(), valor: parseDecimal(v.valor), numero_vidas: parseIntOrNull(v.numero_vidas), valor_total_fatura: parseDecimal(v.valor_total_fatura), vigencia: v.vigencia || null, vencimento: v.vencimento || null };
+      payload = { ...comum, plano: v.plano.trim(), operadora: v.operadora.trim(), administradora: v.administradora.trim(), valor: parseDecimal(v.valor), numero_vidas: parseIntOrNull(v.numero_vidas), valor_total_fatura: parseDecimal(v.valor_total_fatura), vigencia: v.vigencia || null, vencimento: v.vencimento || null };
     }
     setSalvando(true);
     const { data: u } = await supabase.auth.getUser();
@@ -98,7 +99,15 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
               <option value="caminhao">Caminhão</option><option value="bike">Bike</option><option value="frota">Frota</option>
             </select>
           </div>
-          {F({ id: "seguradora", label: "Seguradora" })}
+          <div className="space-y-1.5">
+            <Label htmlFor="seguradora">Seguradora</Label>
+            <select id="seguradora" className={sel} value={v.seguradora} onChange={set("seguradora")}>
+              <option value="">Selecione...</option>
+              {SEGURADORAS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
           {F({ id: "valor_apolice", label: "Valor da apólice (R$)", inputMode: "decimal", placeholder: "0,00" })}
           <div className="space-y-1.5">
             <Label htmlFor="forma_pagamento">Forma de pagamento *</Label>
@@ -114,7 +123,6 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
           {F({ id: "plano", label: "Plano" })}
           {F({ id: "operadora", label: "Operadora" })}
           {F({ id: "administradora", label: "Administradora" })}
-          {F({ id: "nome_produtor", label: "Nome do produtor" })}
           {F({ id: "valor", label: "Valor (R$)", inputMode: "decimal", placeholder: "0,00" })}
           {F({ id: "numero_vidas", label: "Nº de vidas", type: "number", min: 0 })}
           {F({ id: "valor_total_fatura", label: "Valor total da fatura (R$)", inputMode: "decimal", placeholder: "0,00" })}
