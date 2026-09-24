@@ -45,6 +45,8 @@ function Consultores() {
 
   if (sessao && !sessao.isAdmin) return <p>Acesso não autorizado.</p>;
 
+  const totalAdminsAtivos = lista.filter((c) => c.is_admin && c.ativo).length;
+
   const atualizar = () => {
     qc.invalidateQueries({ queryKey: ["consultores-full"] });
     qc.invalidateQueries({ queryKey: ["consultores"] });
@@ -95,19 +97,30 @@ function Consultores() {
             <tr><th className="p-3">Nome</th><th className="p-3">Código</th><th className="p-3">Perfil</th><th className="p-3">Status</th><th className="p-3">Observação</th><th className="p-3 text-right">Ações</th></tr>
           </thead>
           <tbody>
-            {lista.map((c) => (
-              <tr key={c.id} className="border-t">
-                <td className="p-3">{c.nome}</td>
-                <td className="p-3 font-mono">{c.codigo}</td>
-                <td className="p-3">{c.is_admin ? "ADM" : "Consultor"}</td>
-                <td className="p-3">{c.ativo ? <span className="text-primary">Ativo</span> : <span className="text-muted-foreground">Inativo</span>}</td>
-                <td className="max-w-xs truncate p-3 text-muted-foreground">{c.observacao || "—"}</td>
-                <td className="space-x-2 whitespace-nowrap p-3 text-right">
-                  <Button size="sm" variant="outline" onClick={() => setForm({ id: c.id, nome: c.nome, codigo: c.codigo, senha: "", is_admin: c.is_admin, ativo: c.ativo, observacao: c.observacao ?? "" })}>Editar</Button>
-                  <Button size="sm" variant="destructive" onClick={() => remover(c)}>Excluir</Button>
-                </td>
-              </tr>
-            ))}
+            {lista.map((c) => {
+              const ultimoAdmin = c.is_admin && c.ativo && totalAdminsAtivos <= 1;
+              return (
+                <tr key={c.id} className="border-t">
+                  <td className="p-3">{c.nome}</td>
+                  <td className="p-3 font-mono">{c.codigo}</td>
+                  <td className="p-3">{c.is_admin ? "ADM" : "Consultor"}</td>
+                  <td className="p-3">{c.ativo ? <span className="text-primary">Ativo</span> : <span className="text-muted-foreground">Inativo</span>}</td>
+                  <td className="max-w-xs truncate p-3 text-muted-foreground">{c.observacao || "—"}</td>
+                  <td className="space-x-2 whitespace-nowrap p-3 text-right">
+                    <Button size="sm" variant="outline" onClick={() => setForm({ id: c.id, nome: c.nome, codigo: c.codigo, senha: "", is_admin: c.is_admin, ativo: c.ativo, observacao: c.observacao ?? "" })}>Editar</Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={ultimoAdmin}
+                      title={ultimoAdmin ? "Não é possível excluir: este é o único ADM ativo do sistema." : undefined}
+                      onClick={() => remover(c)}
+                    >
+                      Excluir
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

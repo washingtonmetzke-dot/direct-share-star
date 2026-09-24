@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
+  pendingComponent: () => <div className="min-h-screen bg-muted" />,
+  pendingMs: 0,
+  pendingMinMs: 0,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
