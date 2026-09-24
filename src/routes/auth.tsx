@@ -6,6 +6,7 @@ import { garantirMaster, EMAIL_DOMAIN } from "@/lib/consultores.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import lordLogo from "@/assets/lord-logo.png";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -58,12 +59,12 @@ function Login() {
     <div className="flex min-h-screen items-center justify-center bg-muted px-4">
       <form onSubmit={entrar} className="w-full max-w-sm space-y-5 rounded-xl border bg-card p-8 shadow-sm">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-primary">Lord Corretora</h1>
-          <p className="text-sm text-muted-foreground">Cadastro de vendas</p>
+          <img src={lordLogo} alt="Lord Corretora de Seguros e Saúde" className="mx-auto w-56 rounded-lg shadow-sm" />
+          <p className="mt-3 text-sm text-muted-foreground">Cadastro de vendas</p>
         </div>
         {erro && <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{erro}</div>}
         <div className="space-y-2">
-          <Label htmlFor="codigo">Código</Label>
+          <Label htmlFor="codigo">Usuário</Label>
           <Input id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value)} required autoFocus />
         </div>
         <div className="space-y-2">
