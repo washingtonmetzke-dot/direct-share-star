@@ -20,6 +20,7 @@ export type Database = {
           codigo: string
           criado_em: string
           id: string
+          is_master: boolean
           nome: string
           observacao: string | null
         }
@@ -28,6 +29,7 @@ export type Database = {
           codigo: string
           criado_em?: string
           id: string
+          is_master?: boolean
           nome: string
           observacao?: string | null
         }
@@ -36,6 +38,7 @@ export type Database = {
           codigo?: string
           criado_em?: string
           id?: string
+          is_master?: boolean
           nome?: string
           observacao?: string | null
         }
