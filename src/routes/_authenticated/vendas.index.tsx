@@ -16,6 +16,16 @@ export const Route = createFileRoute("/_authenticated/vendas/")({
 
 const badge: Record<string, string> = { auto: "bg-primary text-primary-foreground", saude: "bg-accent text-accent-foreground", odonto: "bg-secondary text-secondary-foreground" };
 
+// Data local (não UTC) no formato yyyy-mm-dd, para bater com os campos De/Até
+// e com a data exibida na coluna Data (evita divergência perto da virada do dia).
+function dataLocal(iso: string) {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function Vendas() {
   const { data: sessao } = useSessao();
   const isAdmin = !!sessao?.isAdmin;
@@ -41,7 +51,7 @@ function Vendas() {
   const nomeDe = useMemo(() => Object.fromEntries(consultores.map((c) => [c.id, c.nome])), [consultores]);
 
   const semConsultor = vendas.filter((v) => {
-    const d = v.data_cadastro.slice(0, 10);
+    const d = dataLocal(v.data_cadastro);
     return (!tipo || v.tipo_produto === tipo) && (!de || d >= de) && (!ate || d <= ate);
   });
   const filtradas = semConsultor.filter((v) => !consultor || v.consultor_id === consultor);
@@ -131,7 +141,7 @@ function Vendas() {
                 )}
               </tr>
             ))}
-            {!filtradas.length && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Nenhuma venda encontrada.</td></tr>}
+            {!filtradas.length && <tr><td colSpan={isAdmin ? 8 : 6} className="p-6 text-center text-muted-foreground">Nenhuma venda encontrada.</td></tr>}
           </tbody>
         </table>
       </div>

@@ -131,11 +131,13 @@ export const editarConsultor = createServerFn({ method: "POST" })
       throw new Error("Não é possível remover o ADM ou desativar o único ADM ativo do sistema.");
     }
 
-    const { data: atual } = await supabaseAdmin.from("consultores").select("is_master").eq("id", data.id).single();
+    const { data: atual } = await supabaseAdmin.from("consultores").select("is_master, codigo").eq("id", data.id).single();
     const eraMaster = !!atual?.is_master;
+    const loginMudou = atual?.codigo !== codigo;
 
-    // Desmarcar o master, ou trocar a senha dele, exige confirmar a senha atual dele.
-    const precisaConfirmarSenha = (eraMaster && !data.is_master) || (eraMaster && data.is_master && data.senha);
+    // Desmarcar o master, trocar a senha dele, ou renomear (o que muda o login
+    // dele, já que o login é derivado do nome) exige confirmar a senha atual dele.
+    const precisaConfirmarSenha = eraMaster && (!data.is_master || data.senha || loginMudou);
     if (precisaConfirmarSenha) {
       const ok = data.senha_master_atual && (await verificarSenhaDoMaster(supabaseAdmin, data.senha_master_atual));
       if (!ok) throw new Error("Senha atual do usuário master incorreta.");
