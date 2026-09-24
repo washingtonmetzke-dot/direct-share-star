@@ -225,7 +225,17 @@ function Consultores() {
                 </div>
               )}
               <label className="flex items-center gap-2 text-sm"><Checkbox checked={form.is_admin} onCheckedChange={(v) => setForm({ ...form, is_admin: !!v })} /> Administrador (ADM)</label>
-              {form.id && <label className="flex items-center gap-2 text-sm"><Checkbox checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: !!v })} /> Ativo</label>}
+              {form.id && (
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={form.ativo}
+                    disabled={form.is_master}
+                    onCheckedChange={(v) => setForm({ ...form, ativo: !!v })}
+                  />
+                  Ativo
+                  {form.is_master && <span className="text-xs text-muted-foreground">(desmarque "Usuário master" primeiro para desativar)</span>}
+                </label>
+              )}
               {form.id && !lista.some((x) => x.is_master && x.id !== form.id) && (
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox

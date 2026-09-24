@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { parseDecimal, parseIntOrNull, TIPO_LABEL } from "@/lib/sessao";
-import { formatTelefone } from "@/lib/mask";
+import { formatTelefone, formatMoeda, numeroParaMoeda } from "@/lib/mask";
 import { CIDADES_ES } from "@/lib/cidades-es";
 import { SEGURADORAS } from "@/lib/seguradoras";
 import { criarVenda, editarVenda } from "@/lib/vendas.functions";
@@ -36,6 +36,9 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     CAMPOS.forEach((c) => (o[c] = str(venda?.[c])));
     if (!o.numero_parcelas) o.numero_parcelas = "1";
     if (o.telefone) o.telefone = formatTelefone(o.telefone);
+    o.valor_apolice = numeroParaMoeda(venda?.valor_apolice);
+    o.valor = numeroParaMoeda(venda?.valor);
+    o.valor_total_fatura = numeroParaMoeda(venda?.valor_total_fatura);
     return o;
   });
   const [salvando, setSalvando] = useState(false);
@@ -75,6 +78,18 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} type={type} value={v[id]} onChange={set(id)} {...rest} />
+    </div>
+  );
+  const M = ({ id, label }: { id: Campo; label: string }) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        inputMode="decimal"
+        placeholder="0,00"
+        value={v[id]}
+        onChange={(e) => setV((p) => ({ ...p, [id]: formatMoeda(e.target.value) }))}
+      />
     </div>
   );
   const sel = "flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm";
@@ -126,7 +141,7 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
               ))}
             </select>
           </div>
-          {F({ id: "valor_apolice", label: "Valor da apólice (R$)", inputMode: "decimal", placeholder: "0,00" })}
+          {M({ id: "valor_apolice", label: "Valor da apólice (R$)" })}
           <div className="space-y-1.5">
             <Label htmlFor="forma_pagamento">Forma de pagamento *</Label>
             <select id="forma_pagamento" className={sel} value={v.forma_pagamento} onChange={set("forma_pagamento")}>
@@ -141,9 +156,9 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
           {F({ id: "plano", label: "Plano" })}
           {F({ id: "operadora", label: "Operadora" })}
           {F({ id: "administradora", label: "Administradora" })}
-          {F({ id: "valor", label: "Valor (R$)", inputMode: "decimal", placeholder: "0,00" })}
+          {M({ id: "valor", label: "Valor (R$)" })}
           {F({ id: "numero_vidas", label: "Nº de vidas", type: "number", min: 0 })}
-          {F({ id: "valor_total_fatura", label: "Valor total da fatura (R$)", inputMode: "decimal", placeholder: "0,00" })}
+          {M({ id: "valor_total_fatura", label: "Valor total da fatura (R$)" })}
           {F({ id: "vigencia", label: "Vigência", type: "date" })}
           {F({ id: "vencimento", label: "Vencimento", type: "date" })}
         </div>

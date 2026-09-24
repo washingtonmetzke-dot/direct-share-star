@@ -122,7 +122,8 @@ export const editarConsultor = createServerFn({ method: "POST" })
     // confirmar a senha atual dele.
     const precisaConfirmarSenha = eraMaster && (!data.is_master || !data.ativo || data.senha || loginMudou);
     if (precisaConfirmarSenha) {
-      const ok = data.senha_master_atual && (await verificarSenhaDoMaster(supabaseAdmin, data.senha_master_atual));
+      if (!data.senha_master_atual) throw new Error("Digite a senha atual do usuário master para confirmar esta alteração.");
+      const ok = await verificarSenhaDoMaster(supabaseAdmin, data.senha_master_atual);
       if (!ok) throw new Error("Senha atual do usuário master incorreta.");
     }
     // Marcar um novo master: só pode haver um no sistema.

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CIDADES_ES } from "@/lib/cidades-es";
 import { SEGURADORAS } from "@/lib/seguradoras";
+import { VALOR_MAXIMO } from "@/lib/mask";
 
 const TIPOS = ["auto", "saude", "odonto"] as const;
 const PRODUTOS_AUTO = ["carro", "moto", "caminhao", "bike", "frota"] as const;
@@ -13,7 +14,13 @@ async function assertAdmin(supabase: any, userId: string) {
   if (error || !data) throw new Error("Acesso não autorizado.");
 }
 
-const numeroOpcional = z.number().finite().min(0, "O valor não pode ser negativo.").nullable().optional();
+const numeroOpcional = z
+  .number()
+  .finite()
+  .min(0, "O valor não pode ser negativo.")
+  .max(VALOR_MAXIMO, `O valor não pode ser maior que ${VALOR_MAXIMO.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}.`)
+  .nullable()
+  .optional();
 
 const comum = z.object({
   nome: z.string().trim().min(1, "O campo Nome é obrigatório.").max(150),
