@@ -71,7 +71,21 @@ const base = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório.").max(120),
   is_admin: z.boolean(),
   observacao: z.string().max(2000).optional().default(""),
+  is_lider: z.boolean().optional().default(false),
+  grupo_id: z.string().uuid().nullable().optional().default(null),
 });
+
+// Líder está sempre associado ao grupo que lidera; quem não é líder usa o
+// mesmo campo para indicar (opcionalmente) de qual grupo é membro. Como é um
+// único campo, um líder nunca pode "também" ser membro de outro grupo, e um
+// membro nunca pertence a mais de um grupo ao mesmo tempo.
+async function validarGrupo(supabaseAdmin: any, data: { is_lider: boolean; grupo_id: string | null }) {
+  if (data.is_lider && !data.grupo_id) throw new Error("Selecione o grupo que este consultor lidera.");
+  if (data.grupo_id) {
+    const { data: g } = await supabaseAdmin.from("grupos").select("id").eq("id", data.grupo_id).maybeSingle();
+    if (!g) throw new Error("Grupo selecionado não existe.");
+  }
+}
 
 export const criarConsultor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -79,12 +93,21 @@ export const criarConsultor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await validarGrupo(supabaseAdmin, data);
     const codigo = await proximoCodigoDisponivel(supabaseAdmin, data.nome);
     const { data: u, error } = await supabaseAdmin.auth.admin.createUser({
       email: toEmail(codigo), password: data.senha, email_confirm: true,
     });
     if (error || !u.user) throw new Error(error?.message ?? "Erro ao criar consultor.");
-    await supabaseAdmin.from("consultores").insert({ id: u.user.id, nome: data.nome, codigo, observacao: data.observacao, ativo: true });
+    await supabaseAdmin.from("consultores").insert({
+      id: u.user.id,
+      nome: data.nome,
+      codigo,
+      observacao: data.observacao,
+      ativo: true,
+      is_lider: data.is_lider,
+      grupo_id: data.grupo_id,
+    });
     if (data.is_admin) await supabaseAdmin.from("user_roles").insert({ user_id: u.user.id, role: "admin" });
     return { ok: true };
   });
@@ -105,6 +128,7 @@ export const editarConsultor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await validarGrupo(supabaseAdmin, data);
     const codigo = await proximoCodigoDisponivel(supabaseAdmin, data.nome, data.id);
     if (data.senha && data.senha.length < 6) throw new Error("Senha deve ter ao menos 6 caracteres.");
 
@@ -137,7 +161,18 @@ export const editarConsultor = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, upd);
     if (error) throw new Error(error.message);
 
-    await supabaseAdmin.from("consultores").update({ nome: data.nome, codigo, observacao: data.observacao, ativo: data.ativo, is_master: data.is_master }).eq("id", data.id);
+    await supabaseAdmin
+      .from("consultores")
+      .update({
+        nome: data.nome,
+        codigo,
+        observacao: data.observacao,
+        ativo: data.ativo,
+        is_master: data.is_master,
+        is_lider: data.is_lider,
+        grupo_id: data.grupo_id,
+      })
+      .eq("id", data.id);
     if (data.is_admin) await supabaseAdmin.from("user_roles").upsert({ user_id: data.id, role: "admin" }, { onConflict: "user_id,role" });
     else await supabaseAdmin.from("user_roles").delete().eq("user_id", data.id).eq("role", "admin");
     return { ok: true };

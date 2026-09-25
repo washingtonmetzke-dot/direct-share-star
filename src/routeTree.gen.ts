@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedConsultoresRouteImport } from './routes/_authenticated/consultores'
+import { Route as AuthenticatedGruposRouteImport } from './routes/_authenticated/grupos'
 import { Route as AuthenticatedVendasIndexRouteImport } from './routes/_authenticated/vendas.index'
 import { Route as AuthenticatedVendasIdRouteImport } from './routes/_authenticated/vendas.$id'
 import { Route as AuthenticatedVendasNovoRouteImport } from './routes/_authenticated/vendas.novo'
@@ -37,6 +38,11 @@ const AuthenticatedConsultoresRoute =
     path: '/consultores',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedGruposRoute = AuthenticatedGruposRouteImport.update({
+  id: '/grupos',
+  path: '/grupos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedVendasIndexRoute =
   AuthenticatedVendasIndexRouteImport.update({
     id: '/vendas/',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/consultores': typeof AuthenticatedConsultoresRoute
+  '/grupos': typeof AuthenticatedGruposRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/vendas/novo': typeof AuthenticatedVendasNovoRoute
   '/vendas/': typeof AuthenticatedVendasIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/consultores': typeof AuthenticatedConsultoresRoute
+  '/grupos': typeof AuthenticatedGruposRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/vendas/novo': typeof AuthenticatedVendasNovoRoute
   '/vendas': typeof AuthenticatedVendasIndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/consultores': typeof AuthenticatedConsultoresRoute
+  '/_authenticated/grupos': typeof AuthenticatedGruposRoute
   '/_authenticated/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/_authenticated/vendas/novo': typeof AuthenticatedVendasNovoRoute
   '/_authenticated/vendas/': typeof AuthenticatedVendasIndexRoute
@@ -83,16 +92,29 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/consultores' | '/vendas/$id' | '/vendas/novo' | '/vendas/'
+    | '/'
+    | '/auth'
+    | '/consultores'
+    | '/grupos'
+    | '/vendas/$id'
+    | '/vendas/novo'
+    | '/vendas/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/auth' | '/consultores' | '/vendas/$id' | '/vendas/novo' | '/vendas'
+    | '/'
+    | '/auth'
+    | '/consultores'
+    | '/grupos'
+    | '/vendas/$id'
+    | '/vendas/novo'
+    | '/vendas'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/consultores'
+    | '/_authenticated/grupos'
     | '/_authenticated/vendas/$id'
     | '/_authenticated/vendas/novo'
     | '/_authenticated/vendas/'
@@ -134,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsultoresRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/grupos': {
+      id: '/_authenticated/grupos'
+      path: '/grupos'
+      fullPath: '/grupos'
+      preLoaderRoute: typeof AuthenticatedGruposRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/vendas/': {
       id: '/_authenticated/vendas/'
       path: '/vendas'
@@ -160,6 +189,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsultoresRoute: typeof AuthenticatedConsultoresRoute
+  AuthenticatedGruposRoute: typeof AuthenticatedGruposRoute
   AuthenticatedVendasIdRoute: typeof AuthenticatedVendasIdRoute
   AuthenticatedVendasNovoRoute: typeof AuthenticatedVendasNovoRoute
   AuthenticatedVendasIndexRoute: typeof AuthenticatedVendasIndexRoute
@@ -167,6 +197,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsultoresRoute: AuthenticatedConsultoresRoute,
+  AuthenticatedGruposRoute: AuthenticatedGruposRoute,
   AuthenticatedVendasIdRoute: AuthenticatedVendasIdRoute,
   AuthenticatedVendasNovoRoute: AuthenticatedVendasNovoRoute,
   AuthenticatedVendasIndexRoute: AuthenticatedVendasIndexRoute,

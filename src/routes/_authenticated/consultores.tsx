@@ -18,7 +18,16 @@ export const Route = createFileRoute("/_authenticated/consultores")({
   component: Consultores,
 });
 
-type Linha = { id: string; nome: string; observacao: string | null; ativo: boolean; is_admin: boolean; is_master: boolean };
+type Linha = {
+  id: string;
+  nome: string;
+  observacao: string | null;
+  ativo: boolean;
+  is_admin: boolean;
+  is_master: boolean;
+  is_lider: boolean;
+  grupo_id: string | null;
+};
 type Form = {
   id?: string;
   nome: string;
@@ -28,6 +37,8 @@ type Form = {
   observacao: string;
   is_master: boolean;
   senha_master_atual: string;
+  is_lider: boolean;
+  grupo_id: string;
 };
 
 function Consultores() {
@@ -55,6 +66,12 @@ function Consultores() {
       return (cs ?? []).map((c) => ({ ...c, is_admin: admins.has(c.id) }));
     },
   });
+  const { data: grupos = [] } = useQuery({
+    queryKey: ["grupos"],
+    enabled: !!sessao?.isAdmin,
+    queryFn: async (): Promise<{ id: string; nome: string }[]> => (await supabase.from("grupos").select("id,nome").order("nome")).data ?? [],
+  });
+  const nomeDoGrupo = (id: string | null) => grupos.find((g) => g.id === id)?.nome ?? "—";
 
   if (sessao && !sessao.isAdmin) return <p>Acesso não autorizado.</p>;
 
@@ -71,6 +88,7 @@ function Consultores() {
     if (!form) return;
     setSalvando(true);
     try {
+      if (form.is_lider && !form.grupo_id) { toast.error("Selecione o grupo que este consultor lidera."); setSalvando(false); return; }
       if (form.id) {
         await editar({
           data: {
@@ -82,11 +100,22 @@ function Consultores() {
             observacao: form.observacao,
             is_master: form.is_master,
             senha_master_atual: form.senha_master_atual,
+            is_lider: form.is_lider,
+            grupo_id: form.grupo_id || null,
           },
         });
         toast.success("Consultor atualizado com sucesso.");
       } else {
-        await criar({ data: { nome: form.nome, senha: form.senha, is_admin: form.is_admin, observacao: form.observacao } });
+        await criar({
+          data: {
+            nome: form.nome,
+            senha: form.senha,
+            is_admin: form.is_admin,
+            observacao: form.observacao,
+            is_lider: form.is_lider,
+            grupo_id: form.grupo_id || null,
+          },
+        });
         toast.success("Consultor cadastrado com sucesso.");
       }
       setForm(null);
@@ -129,12 +158,29 @@ function Consultores() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Consultores</h1>
-        <Button size="sm" onClick={() => setForm({ nome: "", senha: "", is_admin: false, ativo: true, observacao: "", is_master: false, senha_master_atual: "" })}>+ Novo Consultor</Button>
+        <Button
+          size="sm"
+          onClick={() =>
+            setForm({
+              nome: "",
+              senha: "",
+              is_admin: false,
+              ativo: true,
+              observacao: "",
+              is_master: false,
+              senha_master_atual: "",
+              is_lider: false,
+              grupo_id: "",
+            })
+          }
+        >
+          + Novo Consultor
+        </Button>
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-muted/60 text-left">
-            <tr><th className="p-3">Nome</th><th className="p-3">Perfil</th><th className="p-3">Status</th><th className="p-3">Observação</th><th className="p-3 text-right">Ações</th></tr>
+            <tr><th className="p-3">Nome</th><th className="p-3">Perfil</th><th className="p-3">Grupo</th><th className="p-3">Status</th><th className="p-3">Observação</th><th className="p-3 text-right">Ações</th></tr>
           </thead>
           <tbody>
             {lista.map((c) => {
@@ -143,6 +189,9 @@ function Consultores() {
                 <tr key={c.id} className="border-t">
                   <td className="p-3">{c.nome}</td>
                   <td className="p-3">{c.is_admin ? "ADM" : "Consultor"}</td>
+                  <td className="p-3">
+                    {c.grupo_id ? (c.is_lider ? `Líder · ${nomeDoGrupo(c.grupo_id)}` : `Membro · ${nomeDoGrupo(c.grupo_id)}`) : "—"}
+                  </td>
                   <td className="p-3">{c.ativo ? <span className="text-primary">Ativo</span> : <span className="text-muted-foreground">Inativo</span>}</td>
                   <td className="max-w-xs truncate p-3 text-muted-foreground">{c.observacao || "—"}</td>
                   <td className="space-x-2 whitespace-nowrap p-3 text-right">
@@ -159,6 +208,8 @@ function Consultores() {
                           observacao: c.observacao ?? "",
                           is_master: c.is_master,
                           senha_master_atual: "",
+                          is_lider: c.is_lider,
+                          grupo_id: c.grupo_id ?? "",
                         })
                       }
                     >
@@ -259,6 +310,31 @@ function Consultores() {
                   Usuário master
                 </label>
               )}
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={form.is_lider}
+                  onCheckedChange={(v) => setForm({ ...form, is_lider: !!v })}
+                />
+                Líder de grupo
+              </label>
+              <div className="space-y-1.5">
+                <Label>{form.is_lider ? "Grupo que lidera *" : "Grupo que pertence"}</Label>
+                {grupos.length ? (
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    value={form.grupo_id}
+                    onChange={(e) => setForm({ ...form, grupo_id: e.target.value })}
+                    required={form.is_lider}
+                  >
+                    <option value="">{form.is_lider ? "Selecione..." : "Nenhum"}</option>
+                    {grupos.map((g) => (
+                      <option key={g.id} value={g.id}>{g.nome}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhum grupo cadastrado ainda. Crie um na tela de Grupos.</p>
+                )}
+              </div>
               <div className="space-y-1.5"><Label>Observação</Label><Textarea value={form.observacao} onChange={(e) => setForm({ ...form, observacao: e.target.value })} /></div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setForm(null)}>Cancelar</Button>

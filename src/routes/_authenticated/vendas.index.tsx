@@ -29,6 +29,8 @@ function dataLocal(iso: string) {
 function Vendas() {
   const { data: sessao } = useSessao();
   const isAdmin = !!sessao?.isAdmin;
+  const isLider = !!sessao?.isLider;
+  const podeVerMultiplos = isAdmin || isLider;
   const qc = useQueryClient();
   const [tipo, setTipo] = useState("");
   const [de, setDe] = useState("");
@@ -44,11 +46,27 @@ function Vendas() {
     },
   });
   const { data: consultores = [] } = useQuery({
-    queryKey: ["consultores"],
-    enabled: isAdmin,
+    queryKey: ["consultores", podeVerMultiplos],
+    enabled: podeVerMultiplos,
+    // Para ADM, a RLS libera todos; para líder, a RLS já restringe automaticamente
+    // aos consultores do próprio grupo (mais ele mesmo).
     queryFn: async () => (await supabase.from("consultores").select("id,nome").eq("is_master", false).order("nome")).data ?? [],
   });
   const nomeDe = useMemo(() => Object.fromEntries(consultores.map((c) => [c.id, c.nome])), [consultores]);
+
+  // Só para ADM: dados extras de todos os consultores/grupos, para montar o
+  // comparativo de vendas por grupo (líder + seus membros).
+  const { data: consultoresComGrupo = [] } = useQuery({
+    queryKey: ["consultores-com-grupo"],
+    enabled: isAdmin,
+    queryFn: async () =>
+      (await supabase.from("consultores").select("id,nome,is_lider,grupo_id").eq("is_master", false).order("nome")).data ?? [],
+  });
+  const { data: gruposList = [] } = useQuery({
+    queryKey: ["grupos-nomes"],
+    enabled: isAdmin,
+    queryFn: async () => (await supabase.from("grupos").select("id,nome").order("nome")).data ?? [],
+  });
 
   const semConsultor = vendas.filter((v) => {
     const d = dataLocal(v.data_cadastro);
@@ -61,6 +79,27 @@ function Vendas() {
     semConsultor.forEach((v) => (m[v.consultor_id] = (m[v.consultor_id] ?? 0) + 1));
     return Object.entries(m).map(([id, n]) => ({ nome: nomeDe[id] ?? "—", vendas: n })).sort((a, b) => b.vendas - a.vendas);
   }, [semConsultor, nomeDe]);
+
+  // Comparativo (ADM): venda geral de cada líder somada às do seu grupo.
+  const rankingGrupos = useMemo(() => {
+    if (!isAdmin) return [];
+    const nomeGrupo = new Map(gruposList.map((g) => [g.id, g.nome]));
+    const liderPorGrupo = new Map<string, string>();
+    consultoresComGrupo.forEach((c) => {
+      if (c.is_lider && c.grupo_id) liderPorGrupo.set(c.grupo_id, c.nome);
+    });
+    const grupoDoConsultor = new Map(consultoresComGrupo.map((c) => [c.id, c.grupo_id]));
+    const contagem = new Map<string, number>();
+    semConsultor.forEach((v) => {
+      const gId = grupoDoConsultor.get(v.consultor_id);
+      if (gId && liderPorGrupo.has(gId)) contagem.set(gId, (contagem.get(gId) ?? 0) + 1);
+    });
+    return Array.from(contagem.entries())
+      .map(([gId, n]) => ({ nome: `${liderPorGrupo.get(gId)} · ${nomeGrupo.get(gId) ?? "—"}`, vendas: n }))
+      .sort((a, b) => b.vendas - a.vendas);
+  }, [isAdmin, gruposList, consultoresComGrupo, semConsultor]);
+
+  const colCount = 6 + (podeVerMultiplos ? 1 : 0) + (isAdmin ? 1 : 0);
 
   async function excluir(id: string, nome: string) {
     if (!confirm(`Excluir a venda de ${nome}?`)) return;
@@ -86,7 +125,7 @@ function Vendas() {
           </select></div>
         <div className="space-y-1.5"><Label>De</Label><Input type="date" value={de} onChange={(e) => setDe(e.target.value)} /></div>
         <div className="space-y-1.5"><Label>Até</Label><Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} /></div>
-        {isAdmin && (
+        {podeVerMultiplos && (
           <div className="space-y-1.5"><Label>Consultor</Label>
             <select className={sel} value={consultor} onChange={(e) => setConsultor(e.target.value)}>
               <option value="">Todos</option>
@@ -95,9 +134,11 @@ function Vendas() {
         )}
       </div>
 
-      {isAdmin && (
+      {podeVerMultiplos && (
         <div className="rounded-xl border bg-card p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold">Ranking de vendas por consultor</h2>
+          <h2 className="mb-3 text-sm font-semibold">
+            Ranking de vendas por consultor{isLider && !isAdmin ? " (seu grupo)" : ""}
+          </h2>
           {ranking.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={ranking}>
@@ -112,13 +153,30 @@ function Vendas() {
         </div>
       )}
 
+      {isAdmin && (
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold">Comparativo de vendas por grupo (líderes)</h2>
+          {rankingGrupos.length ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={rankingGrupos}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="nome" fontSize={12} />
+                <YAxis allowDecimals={false} fontSize={12} />
+                <Tooltip />
+                <Bar dataKey="vendas" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="text-sm text-muted-foreground">Nenhum grupo com líder definido ainda.</p>}
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-muted/60 text-left">
             <tr>
               <th className="p-3">Nome</th><th className="p-3">Tipo</th><th className="p-3">Seguradora / Operadora</th>
               <th className="p-3">Vidas</th><th className="p-3">Cidade</th>
-              {isAdmin && <th className="p-3">Consultor</th>}
+              {podeVerMultiplos && <th className="p-3">Consultor</th>}
               <th className="p-3">Data</th>
               {isAdmin && <th className="p-3 text-right">Ações</th>}
             </tr>
@@ -131,7 +189,7 @@ function Vendas() {
                 <td className="p-3">{(v.tipo_produto === "auto" ? v.seguradora : v.operadora) || "—"}</td>
                 <td className="p-3">{v.tipo_produto !== "auto" && v.numero_vidas != null ? v.numero_vidas : "—"}</td>
                 <td className="p-3">{v.cidade || "—"}</td>
-                {isAdmin && <td className="p-3">{nomeDe[v.consultor_id] ?? "—"}</td>}
+                {podeVerMultiplos && <td className="p-3">{nomeDe[v.consultor_id] ?? "—"}</td>}
                 <td className="p-3">{new Date(v.data_cadastro).toLocaleDateString("pt-BR")}</td>
                 {isAdmin && (
                   <td className="space-x-2 whitespace-nowrap p-3 text-right">
@@ -141,7 +199,7 @@ function Vendas() {
                 )}
               </tr>
             ))}
-            {!filtradas.length && <tr><td colSpan={isAdmin ? 8 : 6} className="p-6 text-center text-muted-foreground">Nenhuma venda encontrada.</td></tr>}
+            {!filtradas.length && <tr><td colSpan={colCount} className="p-6 text-center text-muted-foreground">Nenhuma venda encontrada.</td></tr>}
           </tbody>
         </table>
       </div>

@@ -45,6 +45,7 @@ function Layout() {
           <Link to="/vendas" className={link} activeProps={ativo} activeOptions={{ exact: true }}>Vendas</Link>
           <Link to="/vendas/novo" className={link} activeProps={ativo}>Nova Venda</Link>
           {sessao?.isAdmin && <Link to="/consultores" className={link} activeProps={ativo}>Consultores</Link>}
+          {sessao?.isAdmin && <Link to="/grupos" className={link} activeProps={ativo}>Grupos</Link>}
           <div className="ml-auto flex items-center gap-3 text-sm">
             <span className="text-primary-foreground/80">
               {sessao?.nome} {sessao?.isAdmin && <span className="ml-1 rounded bg-accent px-1.5 py-0.5 text-xs text-accent-foreground">ADM</span>}
