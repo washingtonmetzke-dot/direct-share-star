@@ -30,7 +30,12 @@ const numeroOpcional = z
   .optional();
 
 const comum = z.object({
-  nome: z.string().trim().min(1, "O campo Nome é obrigatório.").max(150),
+  nome: z
+    .string()
+    .trim()
+    .min(1, "O campo Nome é obrigatório.")
+    .max(150)
+    .transform((v) => v.toUpperCase()),
   email: z
     .string()
     .trim()

@@ -130,7 +130,15 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     <form onSubmit={salvar} className="space-y-6 rounded-xl border bg-card p-6 shadow-sm">
       <h2 className="text-xl font-semibold">{venda ? "Editar" : "Nova"} venda · {TIPO_LABEL[tipo]}</h2>
       <div className="grid gap-4 md:grid-cols-2">
-        {F({ id: "nome", label: tipo === "auto" ? "Nome *" : "Nome do titular *", required: true })}
+        <div className="space-y-1.5">
+          <Label htmlFor="nome">{tipo === "auto" ? "Nome *" : "Nome do titular *"}</Label>
+          <Input
+            id="nome"
+            required
+            value={v.nome}
+            onChange={(e) => setV((p) => ({ ...p, nome: e.target.value.toUpperCase() }))}
+          />
+        </div>
         {F({ id: "email", label: "E-mail", type: "email" })}
         <div className="space-y-1.5">
           <Label htmlFor="telefone">Telefone</Label>
