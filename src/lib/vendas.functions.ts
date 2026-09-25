@@ -4,6 +4,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CIDADES_ES } from "@/lib/cidades-es";
 import { SEGURADORAS } from "@/lib/seguradoras";
 import { VALOR_MAXIMO } from "@/lib/mask";
+import {
+  ADMINISTRADORAS_SAUDE,
+  OPERADORAS_SAUDE,
+  ADMINISTRADORAS_ODONTO,
+  OPERADORAS_ODONTO,
+  VENCIMENTOS,
+} from "@/lib/planos-saude-odonto";
 
 const TIPOS = ["auto", "saude", "odonto"] as const;
 const PRODUTOS_AUTO = ["carro", "moto", "caminhao", "bike", "frota"] as const;
@@ -63,26 +70,68 @@ const autoExtra = z.object({
     .refine((v) => !v || (SEGURADORAS as readonly string[]).includes(v), "Seguradora inválida."),
 });
 
-const saudeOdontoExtra = z.object({
-  plano: z.string().trim().max(150).optional().default(""),
-  operadora: z.string().trim().max(150).optional().default(""),
-  administradora: z.string().trim().max(150).optional().default(""),
+const numeroVidasOpcional = z
+  .number()
+  .int("Número de vidas inválido.")
+  .min(0, "Número de vidas não pode ser negativo.")
+  .nullable()
+  .optional();
+
+const vencimentoOpcional = z
+  .number()
+  .refine((v) => (VENCIMENTOS as readonly number[]).includes(v), "Selecione um vencimento válido.")
+  .nullable()
+  .optional();
+
+const saudeExtra = z.object({
+  nome_produto: z.string().trim().max(150).optional().default(""),
+  administradora: z
+    .string()
+    .trim()
+    .optional()
+    .default("")
+    .refine((v) => !v || (ADMINISTRADORAS_SAUDE as readonly string[]).includes(v), "Selecione uma administradora válida."),
+  operadora: z
+    .string()
+    .trim()
+    .optional()
+    .default("")
+    .refine((v) => !v || (OPERADORAS_SAUDE as readonly string[]).includes(v), "Selecione uma operadora válida."),
+  inclusao: z.boolean().optional().default(false),
   valor: numeroOpcional,
-  numero_vidas: z
-    .number()
-    .int("Número de vidas inválido.")
-    .min(0, "Número de vidas não pode ser negativo.")
-    .nullable()
-    .optional(),
+  numero_vidas: numeroVidasOpcional,
   valor_total_fatura: numeroOpcional,
   vigencia: z.string().nullable().optional(),
-  vencimento: z.string().nullable().optional(),
+  vencimento: vencimentoOpcional,
+});
+
+const odontoExtra = z.object({
+  nome_produto: z.string().trim().max(150).optional().default(""),
+  administradora: z
+    .string()
+    .trim()
+    .optional()
+    .default("")
+    .refine((v) => !v || (ADMINISTRADORAS_ODONTO as readonly string[]).includes(v), "Selecione uma administradora válida."),
+  operadora: z
+    .string()
+    .trim()
+    .optional()
+    .default("")
+    .refine((v) => !v || (OPERADORAS_ODONTO as readonly string[]).includes(v), "Selecione uma operadora válida."),
+  inclusao: z.boolean().optional().default(false),
+  valor: numeroOpcional,
+  numero_vidas: numeroVidasOpcional,
+  valor_total_fatura: numeroOpcional,
+  vigencia: z.string().nullable().optional(),
+  vencimento: vencimentoOpcional,
 });
 
 function validarVenda(d: any) {
   if (!TIPOS.includes(d?.tipo_produto)) throw new Error("Tipo de produto inválido.");
   const base = comum.parse(d);
-  const extra = d.tipo_produto === "auto" ? autoExtra.parse(d) : saudeOdontoExtra.parse(d);
+  const extra =
+    d.tipo_produto === "auto" ? autoExtra.parse(d) : d.tipo_produto === "saude" ? saudeExtra.parse(d) : odontoExtra.parse(d);
   return { tipo_produto: d.tipo_produto as (typeof TIPOS)[number], ...base, ...extra };
 }
 

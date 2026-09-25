@@ -8,9 +8,17 @@ import { formatTelefone, formatMoeda, numeroParaMoeda } from "@/lib/mask";
 import { CIDADES_ES } from "@/lib/cidades-es";
 import { SEGURADORAS } from "@/lib/seguradoras";
 import { criarVenda, editarVenda } from "@/lib/vendas.functions";
+import {
+  ADMINISTRADORAS_SAUDE,
+  OPERADORAS_SAUDE,
+  ADMINISTRADORAS_ODONTO,
+  OPERADORAS_ODONTO,
+  VENCIMENTOS,
+} from "@/lib/planos-saude-odonto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function mensagem(err: any) {
   const m = err?.message ?? String(err);
@@ -22,9 +30,14 @@ function mensagem(err: any) {
 }
 
 type Tipo = "auto" | "saude" | "odonto";
-const CAMPOS = ["nome","email","telefone","cidade","produto_auto","valor_apolice","forma_pagamento","numero_parcelas","seguradora","plano","operadora","administradora","valor","numero_vidas","valor_total_fatura","vigencia","vencimento"] as const;
+const CAMPOS = ["nome","email","telefone","cidade","produto_auto","valor_apolice","forma_pagamento","numero_parcelas","seguradora","nome_produto","operadora","administradora","valor","numero_vidas","valor_total_fatura","vigencia","vencimento"] as const;
 type Campo = (typeof CAMPOS)[number];
 const str = (v: unknown) => (v === null || v === undefined ? "" : String(v));
+const paraOpcaoOuOutro = (valor: string, opcoes: readonly string[]) => {
+  if (!valor) return "";
+  const encontrada = opcoes.find((o) => o.toLowerCase() === valor.toLowerCase());
+  return encontrada ?? "Outro";
+};
 
 export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, any> }) {
   const navigate = useNavigate();
@@ -39,8 +52,16 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     o.valor_apolice = numeroParaMoeda(venda?.["valor_apolice"]);
     o.valor = numeroParaMoeda(venda?.["valor"]);
     o.valor_total_fatura = numeroParaMoeda(venda?.["valor_total_fatura"]);
+    if (tipo === "saude") {
+      o.administradora = paraOpcaoOuOutro(o.administradora, ADMINISTRADORAS_SAUDE);
+      o.operadora = paraOpcaoOuOutro(o.operadora, OPERADORAS_SAUDE);
+    } else if (tipo === "odonto") {
+      o.administradora = paraOpcaoOuOutro(o.administradora, ADMINISTRADORAS_ODONTO);
+      o.operadora = paraOpcaoOuOutro(o.operadora, OPERADORAS_ODONTO);
+    }
     return o;
   });
+  const [inclusao, setInclusao] = useState(!!venda?.["inclusao"]);
   const [salvando, setSalvando] = useState(false);
   const set = (k: Campo) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV((p) => ({ ...p, [k]: e.target.value }));
 
@@ -54,7 +75,18 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
       if (!v.forma_pagamento) { toast.error("Selecione uma forma de pagamento válida."); return; }
       payload = { ...comum, produto_auto: v.produto_auto, valor_apolice: parseDecimal(v.valor_apolice), forma_pagamento: v.forma_pagamento, numero_parcelas: parseIntOrNull(v.numero_parcelas) ?? 1, seguradora: v.seguradora.trim() };
     } else {
-      payload = { ...comum, plano: v.plano.trim(), operadora: v.operadora.trim(), administradora: v.administradora.trim(), valor: parseDecimal(v.valor), numero_vidas: parseIntOrNull(v.numero_vidas), valor_total_fatura: parseDecimal(v.valor_total_fatura), vigencia: v.vigencia || null, vencimento: v.vencimento || null };
+      payload = {
+        ...comum,
+        nome_produto: v.nome_produto.trim(),
+        operadora: v.operadora.trim(),
+        administradora: v.administradora.trim(),
+        inclusao,
+        valor: parseDecimal(v.valor),
+        numero_vidas: parseIntOrNull(v.numero_vidas),
+        valor_total_fatura: parseDecimal(v.valor_total_fatura),
+        vigencia: v.vigencia || null,
+        vencimento: v.vencimento ? Number(v.vencimento) : null,
+      };
     }
     setSalvando(true);
     try {
@@ -98,7 +130,7 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
     <form onSubmit={salvar} className="space-y-6 rounded-xl border bg-card p-6 shadow-sm">
       <h2 className="text-xl font-semibold">{venda ? "Editar" : "Nova"} venda · {TIPO_LABEL[tipo]}</h2>
       <div className="grid gap-4 md:grid-cols-2">
-        {F({ id: "nome", label: "Nome *", required: true })}
+        {F({ id: "nome", label: tipo === "auto" ? "Nome *" : "Nome do titular *", required: true })}
         {F({ id: "email", label: "E-mail", type: "email" })}
         <div className="space-y-1.5">
           <Label htmlFor="telefone">Telefone</Label>
@@ -152,15 +184,45 @@ export function VendaForm({ tipo, venda }: { tipo: Tipo; venda?: Record<string, 
           {F({ id: "numero_parcelas", label: "Nº de parcelas", type: "number", min: 1, max: 24 })}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {F({ id: "plano", label: "Plano" })}
-          {F({ id: "operadora", label: "Operadora" })}
-          {F({ id: "administradora", label: "Administradora" })}
-          {M({ id: "valor", label: "Valor (R$)" })}
-          {F({ id: "numero_vidas", label: "Nº de vidas", type: "number", min: 0 })}
-          {M({ id: "valor_total_fatura", label: "Valor total da fatura (R$)" })}
-          {F({ id: "vigencia", label: "Vigência", type: "date" })}
-          {F({ id: "vencimento", label: "Vencimento", type: "date" })}
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={inclusao} onCheckedChange={(c) => setInclusao(!!c)} />
+            {tipo === "saude" ? "Inclusão Saúde" : "Inclusão Odonto"}
+          </label>
+          <div className="grid gap-4 md:grid-cols-2">
+            {F({ id: "nome_produto", label: "Nome do produto" })}
+            <div className="space-y-1.5">
+              <Label htmlFor="operadora">Operadora</Label>
+              <select id="operadora" className={sel} value={v.operadora} onChange={set("operadora")}>
+                <option value="">Selecione...</option>
+                {(tipo === "saude" ? OPERADORAS_SAUDE : OPERADORAS_ODONTO).map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="administradora">Administradora</Label>
+              <select id="administradora" className={sel} value={v.administradora} onChange={set("administradora")}>
+                <option value="">Selecione...</option>
+                {(tipo === "saude" ? ADMINISTRADORAS_SAUDE : ADMINISTRADORAS_ODONTO).map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+            {M({ id: "valor", label: "Valor (R$)" })}
+            {F({ id: "numero_vidas", label: "Nº de vidas", type: "number", min: 0 })}
+            {M({ id: "valor_total_fatura", label: "Valor total da fatura (R$)" })}
+            {F({ id: "vigencia", label: "Vigência", type: "date" })}
+            <div className="space-y-1.5">
+              <Label htmlFor="vencimento">Vencimento</Label>
+              <select id="vencimento" className={sel} value={v.vencimento} onChange={set("vencimento")}>
+                <option value="">Selecione...</option>
+                {VENCIMENTOS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       )}
       <div className="flex gap-2">
