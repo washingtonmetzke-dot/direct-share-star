@@ -79,11 +79,18 @@ const base = z.object({
 // mesmo campo para indicar (opcionalmente) de qual grupo é membro. Como é um
 // único campo, um líder nunca pode "também" ser membro de outro grupo, e um
 // membro nunca pertence a mais de um grupo ao mesmo tempo.
-async function validarGrupo(supabaseAdmin: any, data: { is_lider: boolean; grupo_id: string | null }) {
+async function validarGrupo(supabaseAdmin: any, data: { is_lider: boolean; grupo_id: string | null }, ignorarId?: string) {
   if (data.is_lider && !data.grupo_id) throw new Error("Selecione o grupo que este consultor lidera.");
   if (data.grupo_id) {
     const { data: g } = await supabaseAdmin.from("grupos").select("id").eq("id", data.grupo_id).maybeSingle();
     if (!g) throw new Error("Grupo selecionado não existe.");
+  }
+  // Cada grupo tem no máximo um líder.
+  if (data.is_lider && data.grupo_id) {
+    let q = supabaseAdmin.from("consultores").select("id, nome").eq("grupo_id", data.grupo_id).eq("is_lider", true);
+    if (ignorarId) q = q.neq("id", ignorarId);
+    const { data: outro } = await q.maybeSingle();
+    if (outro) throw new Error(`Este grupo já tem um líder (${outro.nome}). Desmarque-o antes de definir outro.`);
   }
 }
 
@@ -128,7 +135,7 @@ export const editarConsultor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await validarGrupo(supabaseAdmin, data);
+    await validarGrupo(supabaseAdmin, data, data.id);
     const codigo = await proximoCodigoDisponivel(supabaseAdmin, data.nome, data.id);
     if (data.senha && data.senha.length < 6) throw new Error("Senha deve ter ao menos 6 caracteres.");
 

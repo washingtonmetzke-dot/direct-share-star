@@ -89,6 +89,14 @@ function Consultores() {
     setSalvando(true);
     try {
       if (form.is_lider && !form.grupo_id) { toast.error("Selecione o grupo que este consultor lidera."); setSalvando(false); return; }
+      if (form.is_lider && form.grupo_id) {
+        const outro = lista.find((x) => x.is_lider && x.grupo_id === form.grupo_id && x.id !== form.id);
+        if (outro) {
+          toast.error(`Este grupo já tem um líder (${outro.nome}). Desmarque-o antes de definir outro.`);
+          setSalvando(false);
+          return;
+        }
+      }
       if (form.id) {
         await editar({
           data: {
@@ -327,9 +335,15 @@ function Consultores() {
                     required={form.is_lider}
                   >
                     <option value="">{form.is_lider ? "Selecione..." : "Nenhum"}</option>
-                    {grupos.map((g) => (
-                      <option key={g.id} value={g.id}>{g.nome}</option>
-                    ))}
+                    {grupos.map((g) => {
+                      const lider = lista.find((x) => x.is_lider && x.grupo_id === g.id && x.id !== form.id);
+                      const bloqueado = form.is_lider && !!lider;
+                      return (
+                        <option key={g.id} value={g.id} disabled={bloqueado}>
+                          {g.nome}{bloqueado ? ` (líder: ${lider!.nome})` : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                 ) : (
                   <p className="text-xs text-muted-foreground">Nenhum grupo cadastrado ainda. Crie um na tela de Grupos.</p>
