@@ -80,6 +80,7 @@ function Consultores() {
   const atualizar = () => {
     qc.invalidateQueries({ queryKey: ["consultores-full"] });
     qc.invalidateQueries({ queryKey: ["consultores"] });
+    qc.invalidateQueries({ queryKey: ["consultores-com-grupo"] });
     qc.invalidateQueries({ queryKey: ["sessao"] });
   };
 

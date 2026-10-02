@@ -5,19 +5,39 @@ import { CalendarCheck, ClipboardList, Layers, LogOut, Menu, PlusCircle, Users, 
 import { supabase } from "@/integrations/supabase/client";
 import { useSessao } from "@/lib/sessao";
 
+const REVERIFICAR_MS = 60_000;
+let ultimaVerificacao: { id: string; em: number } | null = null;
+
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   pendingComponent: () => <div className="min-h-screen bg-muted" />,
   pendingMs: 0,
   pendingMinMs: 0,
   beforeLoad: async () => {
+    // Trocar de tela não deve esperar rede: a sessão é lida localmente e a
+    // confirmação no servidor (usuário existe e está ativo) só se repete a cada
+    // REVERIFICAR_MS. A segurança dos dados continua garantida pela RLS.
+    const { data: s } = await supabase.auth.getSession();
+    const user = s.session?.user;
+    if (!user) {
+      ultimaVerificacao = null;
+      throw redirect({ to: "/auth" });
+    }
+    if (ultimaVerificacao && ultimaVerificacao.id === user.id && Date.now() - ultimaVerificacao.em < REVERIFICAR_MS) {
+      return { user };
+    }
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    if (error || !data.user) {
+      ultimaVerificacao = null;
+      throw redirect({ to: "/auth" });
+    }
     const { data: c } = await supabase.from("consultores").select("ativo").eq("id", data.user.id).maybeSingle();
     if (!c?.ativo) {
+      ultimaVerificacao = null;
       await supabase.auth.signOut();
       throw redirect({ to: "/auth" });
     }
+    ultimaVerificacao = { id: data.user.id, em: Date.now() };
     return { user: data.user };
   },
   component: Layout,
