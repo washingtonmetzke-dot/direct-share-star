@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as PresencaRouteImport } from './routes/presenca'
 import { Route as AuthenticatedConsultoresRouteImport } from './routes/_authenticated/consultores'
 import { Route as AuthenticatedGruposRouteImport } from './routes/_authenticated/grupos'
+import { Route as AuthenticatedPresencasRouteImport } from './routes/_authenticated/presencas'
 import { Route as AuthenticatedVendasIndexRouteImport } from './routes/_authenticated/vendas.index'
 import { Route as AuthenticatedVendasIdRouteImport } from './routes/_authenticated/vendas.$id'
 import { Route as AuthenticatedVendasNovoRouteImport } from './routes/_authenticated/vendas.novo'
@@ -32,6 +34,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PresencaRoute = PresencaRouteImport.update({
+  id: '/presenca',
+  path: '/presenca',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedConsultoresRoute =
   AuthenticatedConsultoresRouteImport.update({
     id: '/consultores',
@@ -41,6 +48,11 @@ const AuthenticatedConsultoresRoute =
 const AuthenticatedGruposRoute = AuthenticatedGruposRouteImport.update({
   id: '/grupos',
   path: '/grupos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPresencasRoute = AuthenticatedPresencasRouteImport.update({
+  id: '/presencas',
+  path: '/presencas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedVendasIndexRoute =
@@ -63,8 +75,10 @@ const AuthenticatedVendasNovoRoute = AuthenticatedVendasNovoRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/presenca': typeof PresencaRoute
   '/consultores': typeof AuthenticatedConsultoresRoute
   '/grupos': typeof AuthenticatedGruposRoute
+  '/presencas': typeof AuthenticatedPresencasRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/vendas/novo': typeof AuthenticatedVendasNovoRoute
   '/vendas/': typeof AuthenticatedVendasIndexRoute
@@ -72,8 +86,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/presenca': typeof PresencaRoute
   '/consultores': typeof AuthenticatedConsultoresRoute
   '/grupos': typeof AuthenticatedGruposRoute
+  '/presencas': typeof AuthenticatedPresencasRoute
   '/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/vendas/novo': typeof AuthenticatedVendasNovoRoute
   '/vendas': typeof AuthenticatedVendasIndexRoute
@@ -83,8 +99,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/presenca': typeof PresencaRoute
   '/_authenticated/consultores': typeof AuthenticatedConsultoresRoute
   '/_authenticated/grupos': typeof AuthenticatedGruposRoute
+  '/_authenticated/presencas': typeof AuthenticatedPresencasRoute
   '/_authenticated/vendas/$id': typeof AuthenticatedVendasIdRoute
   '/_authenticated/vendas/novo': typeof AuthenticatedVendasNovoRoute
   '/_authenticated/vendas/': typeof AuthenticatedVendasIndexRoute
@@ -94,8 +112,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/presenca'
     | '/consultores'
     | '/grupos'
+    | '/presencas'
     | '/vendas/$id'
     | '/vendas/novo'
     | '/vendas/'
@@ -103,8 +123,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/presenca'
     | '/consultores'
     | '/grupos'
+    | '/presencas'
     | '/vendas/$id'
     | '/vendas/novo'
     | '/vendas'
@@ -113,8 +135,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/presenca'
     | '/_authenticated/consultores'
     | '/_authenticated/grupos'
+    | '/_authenticated/presencas'
     | '/_authenticated/vendas/$id'
     | '/_authenticated/vendas/novo'
     | '/_authenticated/vendas/'
@@ -124,6 +148,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PresencaRoute: typeof PresencaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -149,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/presenca': {
+      id: '/presenca'
+      path: '/presenca'
+      fullPath: '/presenca'
+      preLoaderRoute: typeof PresencaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/consultores': {
       id: '/_authenticated/consultores'
       path: '/consultores'
@@ -161,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/grupos'
       fullPath: '/grupos'
       preLoaderRoute: typeof AuthenticatedGruposRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/presencas': {
+      id: '/_authenticated/presencas'
+      path: '/presencas'
+      fullPath: '/presencas'
+      preLoaderRoute: typeof AuthenticatedPresencasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/vendas/': {
@@ -190,6 +229,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsultoresRoute: typeof AuthenticatedConsultoresRoute
   AuthenticatedGruposRoute: typeof AuthenticatedGruposRoute
+  AuthenticatedPresencasRoute: typeof AuthenticatedPresencasRoute
   AuthenticatedVendasIdRoute: typeof AuthenticatedVendasIdRoute
   AuthenticatedVendasNovoRoute: typeof AuthenticatedVendasNovoRoute
   AuthenticatedVendasIndexRoute: typeof AuthenticatedVendasIndexRoute
@@ -198,6 +238,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsultoresRoute: AuthenticatedConsultoresRoute,
   AuthenticatedGruposRoute: AuthenticatedGruposRoute,
+  AuthenticatedPresencasRoute: AuthenticatedPresencasRoute,
   AuthenticatedVendasIdRoute: AuthenticatedVendasIdRoute,
   AuthenticatedVendasNovoRoute: AuthenticatedVendasNovoRoute,
   AuthenticatedVendasIndexRoute: AuthenticatedVendasIndexRoute,
@@ -210,6 +251,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PresencaRoute: PresencaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
