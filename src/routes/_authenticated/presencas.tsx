@@ -67,6 +67,22 @@ function Presencas() {
     qc.invalidateQueries({ queryKey: ["reuniao"] });
   }
 
+  async function copiarLink() {
+    const link = window.location.origin;
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      const t = document.createElement("textarea");
+      t.value = link;
+      document.body.appendChild(t);
+      t.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(t);
+      if (!ok) { toast.error("Não foi possível copiar. Copie o link manualmente."); return; }
+    }
+    toast.success("Link copiado.");
+  }
+
   async function remover(c: Confirmacao) {
     if (!confirm(`Remover a confirmação de ${c.nome}?`)) return;
     const { error } = await supabase.from("confirmacoes_presenca").delete().eq("id", c.id);
@@ -89,7 +105,13 @@ function Presencas() {
         </div>
         <div className="space-y-1.5"><Label>Descrição</Label><Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} maxLength={1000} /></div>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">Link para divulgar: {typeof window !== "undefined" ? window.location.origin : ""}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs text-muted-foreground">Link para divulgar: {typeof window !== "undefined" ? window.location.origin : ""}</p>
+            <Button type="button" size="sm" variant="outline" onClick={copiarLink}>Copiar link</Button>
+            <Button asChild size="sm" variant="outline">
+              <a href="/" target="_blank" rel="noopener noreferrer">Abrir tela inicial</a>
+            </Button>
+          </div>
           <Button type="submit" size="sm" disabled={salvando}>{salvando ? "Salvando..." : "Salvar reunião"}</Button>
         </div>
       </form>
