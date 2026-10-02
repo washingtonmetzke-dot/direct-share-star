@@ -25,6 +25,7 @@ function Presencas() {
   const { data: reuniao } = useReuniao();
   const [form, setForm] = useState<FormReuniao>({ titulo: "", descricao: "", data: "", hora: "", local: "" });
   const [salvando, setSalvando] = useState(false);
+  const [alternando, setAlternando] = useState(false);
 
   useEffect(() => {
     if (reuniao) {
@@ -67,6 +68,17 @@ function Presencas() {
     qc.invalidateQueries({ queryKey: ["reuniao"] });
   }
 
+  async function alternarAtiva() {
+    if (!reuniao) return;
+    const nova = !reuniao.ativa;
+    setAlternando(true);
+    const { error } = await supabase.from("reuniao").update({ ativa: nova, atualizado_em: new Date().toISOString() }).eq("id", 1);
+    setAlternando(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(nova ? "Reunião ativada: aparece na tela inicial." : "Reunião desativada: não aparece mais na tela inicial.");
+    qc.invalidateQueries({ queryKey: ["reuniao"] });
+  }
+
   async function copiarLink() {
     const link = window.location.origin;
     try {
@@ -96,7 +108,17 @@ function Presencas() {
       <h1 className="text-2xl font-semibold">Presenças</h1>
 
       <form onSubmit={salvarReuniao} className="space-y-4 rounded-xl border bg-card p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">Dados da reunião (aparecem na tela inicial)</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Dados da reunião (aparecem na tela inicial)</h2>
+          <div className="flex items-center gap-2">
+            <span className={`rounded px-2 py-0.5 text-xs ${reuniao?.ativa ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              {reuniao?.ativa ? "Ativa na tela inicial" : "Desativada"}
+            </span>
+            <Button type="button" size="sm" variant={reuniao?.ativa ? "destructive" : "default"} disabled={!reuniao || alternando} onClick={alternarAtiva}>
+              {reuniao?.ativa ? "Desativar reunião" : "Ativar reunião"}
+            </Button>
+          </div>
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-1.5"><Label>Título</Label><Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} maxLength={150} /></div>
           <div className="space-y-1.5"><Label>Local</Label><Input value={form.local} onChange={(e) => setForm({ ...form, local: e.target.value })} maxLength={200} /></div>

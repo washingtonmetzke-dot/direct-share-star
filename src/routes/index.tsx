@@ -24,17 +24,19 @@ function Home() {
       <div className="w-full max-w-md space-y-5">
         <img src={lordLogo} alt="Lord Corretora de Seguros e Saúde" className="mx-auto w-56 rounded-lg shadow-sm" />
 
-        <div className="space-y-3 rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">{r?.titulo || "Reunião"}</h2>
-          {r?.descricao && <p className="text-sm text-muted-foreground">{r.descricao}</p>}
-          {(quando || r?.local) && (
-            <ul className="space-y-1 text-sm">
-              {quando && <li><span className="font-medium">Quando:</span> {quando}</li>}
-              {r?.local && <li><span className="font-medium">Local:</span> {r.local}</li>}
-            </ul>
-          )}
-          <Button asChild className="w-full"><Link to="/presenca">Confirmar presença</Link></Button>
-        </div>
+        {r?.ativa && (
+          <div className="space-y-3 rounded-xl border bg-card p-6 shadow-sm">
+            <h2 className="text-lg font-semibold">{r.titulo || "Reunião"}</h2>
+            {r.descricao && <p className="text-sm text-muted-foreground">{r.descricao}</p>}
+            {(quando || r.local) && (
+              <ul className="space-y-1 text-sm">
+                {quando && <li><span className="font-medium">Quando:</span> {quando}</li>}
+                {r.local && <li><span className="font-medium">Local:</span> {r.local}</li>}
+              </ul>
+            )}
+            <Button asChild className="w-full"><Link to="/presenca">Confirmar presença</Link></Button>
+          </div>
+        )}
 
         <div className="space-y-3 rounded-xl border bg-card p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Entrar no sistema</h2>

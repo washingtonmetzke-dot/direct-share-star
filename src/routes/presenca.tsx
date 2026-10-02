@@ -21,7 +21,8 @@ export const Route = createFileRoute("/presenca")({
 });
 
 function Presenca() {
-  const { data: r } = useReuniao();
+  const { data: r, isLoading } = useReuniao();
+  const encerrada = !isLoading && !r?.ativa;
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [erro, setErro] = useState("");
@@ -40,7 +41,9 @@ function Presenca() {
     const { error } = await supabase.from("confirmacoes_presenca").insert({ nome: nomeLimpo, telefone: digitos });
     setEnviando(false);
     if (error) {
-      return setErro(error.code === "23505" ? "Esse telefone já confirmou presença." : "Não foi possível confirmar agora. Tente novamente.");
+      if (error.code === "23505") return setErro("Esse telefone já confirmou presença.");
+      if (error.code === "42501") return setErro("As confirmações de presença estão encerradas.");
+      return setErro("Não foi possível confirmar agora. Tente novamente.");
     }
     setConfirmado(true);
   }
@@ -50,12 +53,21 @@ function Presenca() {
       <div className="w-full max-w-sm space-y-5 rounded-xl border bg-card p-8 shadow-sm">
         <div className="text-center">
           <img src={lordLogo} alt="Lord Corretora de Seguros e Saúde" className="mx-auto w-48 rounded-lg shadow-sm" />
-          <h1 className="mt-3 text-lg font-semibold">{r?.titulo || "Reunião"}</h1>
-          {quando && <p className="text-sm text-muted-foreground">{quando}</p>}
-          {r?.local && <p className="text-sm text-muted-foreground">{r.local}</p>}
+          {!encerrada && (
+            <>
+              <h1 className="mt-3 text-lg font-semibold">{r?.titulo || "Reunião"}</h1>
+              {quando && <p className="text-sm text-muted-foreground">{quando}</p>}
+              {r?.local && <p className="text-sm text-muted-foreground">{r.local}</p>}
+            </>
+          )}
         </div>
 
-        {confirmado ? (
+        {encerrada ? (
+          <div className="space-y-4 text-center">
+            <p className="text-sm text-muted-foreground">As confirmações de presença estão encerradas no momento.</p>
+            <Button asChild variant="outline" className="w-full"><Link to="/">Voltar ao início</Link></Button>
+          </div>
+        ) : confirmado ? (
           <div className="space-y-4 text-center">
             <div className="rounded-md bg-primary/10 px-3 py-3 text-sm text-primary">Presença confirmada! Obrigado, {nome.trim()}.</div>
             <Button asChild variant="outline" className="w-full"><Link to="/">Voltar ao início</Link></Button>
